@@ -3,3 +3,6 @@ codex-*.md
 codex-*.txt
 sa-latest.txt
 phase-current.md
+
+# JetBrains IDE
+.idea/
