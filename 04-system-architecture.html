@@ -30,7 +30,7 @@
   #hud .pct{font-family:var(--mono);font-size:10px;min-width:42px;text-align:center}
   #hud .tip{color:var(--faint);border-left:1px solid #e3e6ea;padding-left:7px;margin-left:2px}
 
-  header.page{width:1920px;margin:0 0 10px}
+  header.page{width:1980px;margin:0 0 10px}
   h1{display:inline-block;background:var(--ink);color:#fff;font-size:20px;font-weight:800;
      letter-spacing:.01em;padding:4px 15px 5px}
   .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
@@ -51,8 +51,9 @@
   .pchip:hover{background:#f3f5f8}
   .pchip.on{background:var(--ink);color:#fff}
   .pchip.on .ptag{color:#c8ccd2}
-  .phint{font-size:10.5px;color:var(--faint);margin-left:2px;max-width:640px}
+  .phint{font-size:10.5px;color:var(--faint);margin-left:2px;max-width:760px}
   .node .ph{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 5px}
+  .node .ph.g{background:#fff;color:var(--sub);border:1px dashed var(--faint)}
   #wrap.pfilter .node.poff{opacity:.12}
   #wrap.pfilter .band.poff{opacity:.18}
   #wrap.pfilter #wires path.poff,#wrap.pfilter #labels text.poff{opacity:.05}
@@ -63,7 +64,7 @@
   .fchip.act{background:var(--ink);color:#fff}
   .fchip.act .fno{color:#c8ccd2}
 
-  #wrap{position:relative;width:1920px;height:760px}
+  #wrap{position:relative;width:1980px;height:1070px}
   #wires{position:absolute;inset:0;z-index:1;pointer-events:none}
   #wires path{fill:none;stroke:var(--ink);stroke-width:1.15;opacity:.5;stroke-linejoin:round;
               transition:opacity .18s ease, stroke-width .18s ease}
@@ -82,16 +83,16 @@
   #wrap.focus .node.lit{opacity:1;box-shadow:0 0 0 1.6px var(--ink)}
   #wrap.focus .node.pinned{box-shadow:0 0 0 2.4px var(--ink)}
   .node .nm{font-weight:700;font-size:12.5px;line-height:1.2}
-  .node .nt{font-size:9.5px;color:var(--sub);line-height:1.3;margin-top:2px}
+  .node .nt{font-size:9.5px;color:var(--sub);line-height:1.32;margin-top:2px}
   .node .bd{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;align-items:center}
   .node .uc{font-family:var(--mono);font-size:9px;border:1px solid var(--ink);padding:0 5px}
   .node .kd{font-family:var(--mono);font-size:9px;border:1px solid var(--faint);
             color:var(--sub);padding:0 5px;background:#f4f6f8}
   .node.store{background:repeating-linear-gradient(135deg,#fff 0 6px,#f4f6f8 6px 12px)}
-  .node.bus{background:#eef1f5;border-width:1.5px;display:flex;align-items:center;gap:10px;
-            padding:0 16px}
-  .node.bus .nm{font-size:13px}
-  .node.bus .nt{margin-top:0;font-size:9.5px}
+  .node.growth{border-style:dashed;border-color:var(--faint);background:#f7f8fa;color:var(--sub);
+               display:flex;align-items:center;gap:12px;padding:0 18px}
+  .node.growth .nm{font-size:13px;color:var(--sub)}
+  .node.growth .nt{margin-top:0}
   .node.ext,.node.face{text-align:center}
   .node.ext .st,.node.face .st{font-family:var(--mono);font-size:9px;color:var(--sub);
             letter-spacing:.02em;margin-top:1px}
@@ -120,8 +121,10 @@
   <div id="inner">
     <header class="page">
       <h1>System Architecture</h1>
-      <div class="meta">PokeClip · 배포 프로그램 <b>7</b> · 데이터 저장소 <b>4</b> · 외부 <b>4</b> · 연결 <b>20</b> · v1.0 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고, 그 사이 <b>프로토콜</b>과 <b>저장소</b>를 드러낸다 · AWS 배치는 ⑤ 클라우드 아키텍처로<br>
-      상자 = 하나의 실행 단위(런타임 뱃지) · 빗금 = 저장소 · 회색 가로 막대 = 이벤트 버스(Kafka) · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 연동 · 저장소·버스로 향하는 선은 그 시스템의 프로토콜을 씀(Kafka 토픽 · JDBC · Redis · S3 API) · 상자·흐름 칩을 누르면 관련 연결만 남습니다</div>
+      <div class="meta">PokeClip · 실행 단위 <b>10</b> · 저장소 <b>4</b> · 외부 <b>4</b> · v2.0 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
+      <b>초기 스택</b> PostgreSQL(+JSONB) · Java 21 Spring Boot/WebFlux · Go+FFmpeg 미디어 · Redis 실시간 집계 · SQS+DLQ 작업 큐 · CMAF/S3 &nbsp;—&nbsp; <b>Kafka는 초기 구성에서 제외</b>, 방송 수·이벤트 소비자가 늘어 재처리·다중 소비가 필요해지는 <b>성장기부터 이벤트 전용</b>으로 도입(작업 큐는 그때도 SQS 유지)<br>
+      <b>성능 목표(서버 통제 구간)</b> 채팅 수집 시각 → 카드 표시 <b>p95 2초</b> · 피크 감지 → 카드 표시 <b>p95 1초</b> — "장면 발생 → 카드"는 플랫폼 방송 지연과 시청자 반응 시차가 끼어 서버가 보장할 수 없다<br>
+      빗금 = 저장소 · 점선 회색 = 성장기 도입 · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 · 저장소로 향하는 선은 그 시스템의 프로토콜을 씀(JDBC · Redis · SQS · S3 API) · 선이 <b>묶음 테두리</b>에 닿으면 그 묶음 전체가 관여한다는 뜻 · 상자·칩 클릭으로 관련 연결만</div>
     </header>
     <div id="wrap">
       <svg id="wires"></svg>
@@ -139,83 +142,101 @@
 </div>
 
 <script>
-/* ===== 좌표 체계 ===== */
-const BX = 206, BY = 0, BW = 1520, BH = 690;   /* 시스템 경계 */
-const LSIDE = 0, RSIDE = 1748;                  /* 클라이언트(좌) · 외부(우) 열 */
+/* ===== 좌표 ===== */
+const BX = 206, BY = 0, BW = 1520, BH = 1050;
+const LSIDE = 0, RSIDE = 1748;
 const BANDX = BX + 30, BANDW = 1460;
 
-/* 밴드(가로 계층) */
 const BANDS = [
-  {key:"rt",  title:"실시간 수집 · 감지", tag:"방송 중 — 송출·채팅에서 카드까지 목표 3초", y:30,  h:172},
-  {key:"app", title:"애플리케이션 · 처리", tag:"요청 처리 · 비동기 작업",                   y:270, h:184},
-  {key:"data",title:"데이터 계층",         tag:"관계형 · 캐시 · 객체 스토리지",             y:474, h:184},
+  {key:"rt",   title:"실시간 수집 · 감지", tag:"방송 중 — 휘발성 실시간 상태",       y:30,  h:200},
+  {key:"app",  title:"애플리케이션 코어",   tag:"요청 처리 · 정합성 · 권한",           y:258, h:190},
+  {key:"wk",   title:"비동기 워커",        tag:"같은 코드·이미지, 실행 서비스는 분리", y:500, h:190},
+  {key:"data", title:"영속 계층",          tag:"원본(Source of Truth) · 큐 · 객체",   y:718, h:190},
 ];
-const bandOf = k => BANDS.find(b=>b.key===k);
 
-/* ── 개발 단계 — ① 유스케이스가 단일 기준, ④에선 각 프로그램이 담은 ③ 블록의 가장 이른 단계를 물려받는다
-      (③→④는 N:M 수동 매핑이라 프로그램마다 단계를 명시한다) ── */
+/* ── 개발 단계 — ①이 단일 기준, ④는 각 실행 단위가 담은 ③ 블록의 가장 이른 단계 ── */
 const PHASES = {
-  1:{nm:"핵심 루프",   tag:"자동 감지 핵심 루프 — 시스템 골격 전체가 여기서 필요하다",
-     note:"7개 프로그램 · 저장소 전부 · 결제 외 외부 연동"},
-  2:{nm:"협업 · 자산", tag:"새 프로그램 없음 — 기존 서비스 내부 기능만 확장",
-     note:"편집자 협업·승인·AI 자막·보관함 관리 등은 웹·Core·워커 안에서 자란다"},
-  3:{nm:"상용화",      tag:"결제(PG) 연동이 유일하게 새로 붙는 시스템 요소",
-     note:"구독·종량 과금 → 결제 시스템"},
+  1:{nm:"핵심 루프",   tag:"자동 감지 루프 — 골격 대부분이 여기서 필요",
+     note:"미디어·채팅·감지·Core·미리보기/렌더/업로드 워커·저장소 전부"},
+  2:{nm:"협업 · 자산", tag:"자막 워커가 새 실행 단위로 추가",
+     note:"협업·승인은 기존 Core 안에서 확장, 새로 뜨는 프로세스는 자막 워커"},
+  3:{nm:"상용화",      tag:"결제(PG) 연동이 새로 붙는 유일한 시스템 요소",
+     note:"구독 · 종량 과금"},
 };
 
-/* ===== 프로그램 · 저장소 (경계 안) ===== */
-/* x,y = 좌상단 · w,h = 크기 · p = 단계 · svc = 담은 ③ 블록 · tech = 런타임 */
+/* ===== 실행 단위 · 저장소 ===== */
 const NODES = [
   /* 실시간 수집 · 감지 */
-  {id:"media",  b:"rt",  x:246, y:70,  w:250, h:110, p:1, kind:"prog", tech:"Go · FFmpeg",
+  {id:"media", b:"rt", x:246, y:72, w:300, h:118, p:1, tech:"Go · FFmpeg",
    nm:"미디어 서버", uc:"UC-04·11·15·18·21",
-   nt:"SRT 수신 · 트랙 분리(영상1+오디오≤10) · 되감기 버퍼 1h · 저지연 재생 · 종료 시 VOD 전환"},
-  {id:"chat",   b:"rt",  x:556, y:70,  w:230, h:110, p:1, kind:"prog", tech:"Spring WebFlux",
+   nt:"SRT 수신 · 영상1 + 오디오≤10 트랙 분리 · monitor audio 생성 · CMAF 세그먼트화 → S3 · DVR 1시간 롤링 · 종료 시 VOD는 재인코딩 없이 매니페스트 확정"},
+  {id:"chat", b:"rt", x:626, y:72, w:300, h:118, p:1, tech:"Java 21 · WebFlux",
    nm:"채팅 수집기", uc:"UC-13",
-   nt:"치지직 / SOOP 채팅 실시간 수집 → 이벤트 버스로 발행 · 수집 대상은 Core가 방송 시작 시 지정"},
-  {id:"detect", b:"rt",  x:846, y:70,  w:250, h:110, p:1, kind:"prog", tech:"Kafka Streams",
+   nt:"치지직 공식 API · SOOP WS · 방송당 한 인스턴스만 활성(Lease) · 플랫폼 반응 시차 보정 · 집계는 Redis, 원본 JSONL은 S3"},
+  {id:"detect", b:"rt", x:1006, y:72, w:300, h:118, p:1, tech:"Java 21 · Spring",
    nm:"하이라이트 감지기", uc:"UC-14",
-   nt:"채팅 집계 · 피크 감지 → 카드 자동 생성 (입력은 채팅뿐, 목표 3초)"},
+   nt:"Redis 집계 위 롤링 베이스라인 · 워밍업 전 발행 보류 · 멀티윈도우 합의 · 카드 멱등키 broadcastId + detectorVersion + peakWindowStart"},
+  {id:"redis", b:"rt", x:1386, y:72, w:300, h:118, p:1, kind:"store",
+   nm:"Redis", uc:"실시간 · 휘발",
+   nt:"채팅 집계 윈도우 · SSE Pub/Sub 팬아웃 · 짧은 캐시 · 세션 — 원본이 아니다. 유실돼도 PostgreSQL과 S3로 화면을 재구성할 수 있어야 한다"},
 
-  /* 이벤트 버스 — 저장소이자 프로그램 사이 전송로 */
-  {id:"kafka",  b:null,  x:470, y:212, w:900, h:44, p:1, kind:"bus",
-   nm:"Kafka", nt:"이벤트 버스 · 채팅 토픽 · 감지 결과 · 렌더·업로드 작업 큐"},
-
-  /* 애플리케이션 · 처리 */
-  {id:"core",   b:"app", x:396, y:300, w:580, h:122, p:1, kind:"prog", tech:"Java · Spring",
+  /* 애플리케이션 코어 */
+  {id:"core", b:"app", x:246, y:300, w:680, h:124, p:1, tech:"Java 21 · Spring Boot",
    nm:"Core API", uc:"UC-01~03·05~10·12·16·17·19·20·22·24·28~32",
-   nt:"인증 · 권한 · 방송 · 카드·타임라인 · 편집 메타 · 보관함 · 승인 · 템플릿 · 구독·과금 · 알림 · 채널 연동 — REST + SSE"},
-  {id:"worker", b:"app", x:1096,y:300, w:290, h:122, p:1, kind:"prog", tech:"FFmpeg 워커",
-   nm:"통합 작업 워커", uc:"UC-22·23·25·26·27",
-   nt:"작업 큐 소비 · 렌더 · AI 자막 · 썸네일 · 유튜브 업로드(재인증·재시도) — 비동기"},
+   nt:"인증 · 권한 · 방송 세션(heartbeat grace로 정상 종료와 단절 구분) · 카드 · 편집 메타 · 보관함 · 승인 · 템플릿 · 구독 · 알림 · REST + SSE — 카드와 Outbox를 한 트랜잭션에 기록한 뒤 이벤트를 발행한다"},
+  {id:"gate", b:"app", x:1006, y:300, w:300, h:124, p:1,
+   nm:"업로드 권한 Gate", uc:"UC-29·30",
+   nt:"Core 내부 관문 — 작업 생성 시 1차, 실제 업로드 직전 2차로 두 번 검사. 편집 권한만 가진 편집자가 만든 작업이 그대로 유튜브로 나가지 못하게 막는다"},
 
-  /* 데이터 계층 */
-  {id:"db",     b:"data",x:300, y:504, w:230, h:110, p:1, kind:"store",
-   nm:"MySQL", uc:"관계형",
-   nt:"계정·권한·방송·카드·편집 메타·승인·구독·템플릿·채널 토큰"},
-  {id:"redis",  b:"data",x:600, y:504, w:200, h:110, p:1, kind:"store",
-   nm:"Redis", uc:"캐시·세션",
-   nt:"세션 · 실시간 카드·처리 상태 조회 캐시"},
-  {id:"s3",     b:"data",x:1096,y:504, w:290, h:110, p:1, kind:"store",
+  /* 비동기 워커 — 같은 이미지, 큐·오토스케일·DLQ는 각자 */
+  {id:"w-sub", b:"wk", x:246, y:542, w:300, h:118, p:2, tech:"Java 21 · STT 엔진 TBD",
+   nm:"자막 워커", uc:"UC-22",
+   nt:"subtitle-jobs 소비 · 선택된 트랙만 STT · 결과 자막 S3 · 전용 DLQ — 엔진은 미정(TBD)"},
+  {id:"w-prev", b:"wk", x:626, y:542, w:300, h:118, p:1, tech:"FFmpeg",
+   nm:"미리보기 워커", uc:"UC-19·22",
+   nt:"preview-jobs 소비 · 썸네일 · 구간 웨이브폼(그 부산물 RMS로 무음 트랙 숨김) · 전용 DLQ"},
+  {id:"w-render", b:"wk", x:1006, y:542, w:300, h:118, p:1, tech:"FFmpeg",
+   nm:"렌더 워커", uc:"UC-22·23",
+   nt:"render-jobs 소비 · 구간·트랙·비율·자막 굽기 · renderVersion 멱등 · CPU 포화가 업로드를 막지 않도록 분리 · 전용 DLQ"},
+  {id:"w-upload", b:"wk", x:1386, y:542, w:300, h:118, p:1, tech:"Java 21",
+   nm:"업로드 워커", uc:"UC-25·26·27",
+   nt:"upload-jobs 소비 · Gate 2차 통과 후 업로드 · 응답 전 단절 시 RECONCILIATION_REQUIRED로 두고 채널 조회 후 재시도(무조건 재업로드 금지) · 전용 DLQ"},
+
+  /* 영속 계층 */
+  {id:"pg", b:"data", x:246, y:760, w:300, h:118, p:1, kind:"store",
+   nm:"PostgreSQL", uc:"관계형 + JSONB",
+   nt:"계정·권한·방송·카드·레시피(JSONB)·클립·잡 상태 · Outbox 테이블 · 유튜브 refresh token은 KMS 암호화 저장"},
+  {id:"sqs", b:"data", x:626, y:760, w:300, h:118, p:1, kind:"store",
+   nm:"SQS + DLQ", uc:"작업 큐",
+   nt:"subtitle · preview · render · upload 네 큐, 각각 전용 DLQ · jobId 멱등 · 큐 길이로 워커 오토스케일"},
+  {id:"s3", b:"data", x:1006, y:760, w:300, h:118, p:1, kind:"store",
    nm:"S3", uc:"객체",
-   nt:"되감기 세그먼트 · VOD · 클립·편집본 산출물 · 썸네일"},
+   nt:"CMAF 세그먼트 — 라이브 1시간 롤링 · VOD 60일 · 채팅 아카이브 JSONL · 완성 클립 보관 · 임시 산출물 1~7일"},
+
+  /* 성장기 */
+  {id:"kafka", x:546, y:944, w:900, h:76, p:"g", growth:true,
+   nm:"Kafka", nt:"성장기 도입 — 이벤트 재처리·다중 소비가 필요해지면 채팅·감지·상태 이벤트 전용으로. 자막·렌더·업로드 작업은 그때도 SQS+DLQ가 소유한다"},
 ];
 
-/* ===== 클라이언트(좌) · 외부 시스템(우) ===== */
+/* ===== 클라이언트(좌) · 외부(우) ===== */
 const SIDES = [
-  {id:"plugin", s:"L", p:1, y:70,  nm:"OBS 플러그인", st:"C++20 · 로컬",   nt:"스트리머 로컬 앱 · SRT 송출 · 핫키 마킹"},
-  {id:"web",    s:"L", p:1, y:322, nm:"웹",           st:"TypeScript · React", nt:"스트리머·편집자 브라우저 앱 · 화면 렌더 · 편집 미리보기(클라이언트) · 재생"},
-  {id:"ex-chat",  s:"R", p:1, y:70,  nm:"치지직 / SOOP", st:"«external»", nt:"방송 플랫폼 · 채팅 소스"},
-  {id:"ex-yt",    s:"R", p:1, y:322, nm:"YouTube",     st:"«external»", nt:"클립 업로드 · CC 등록"},
-  {id:"ex-google",s:"R", p:1, y:470, nm:"Google",      st:"«external»", nt:"OAuth 로그인"},
-  {id:"ex-pg",    s:"R", p:3, y:560, nm:"결제 시스템",  st:"«external · PG»", nt:"구독 결제 · 종량 과금"},
+  {id:"plugin", s:"L", p:1, y:72,  nm:"OBS 플러그인", st:"C++20 · 로컬",
+   nt:"SRT 송출 · 핫키 마킹 · start/stop/heartbeat"},
+  {id:"web",    s:"L", p:1, y:300, nm:"웹",           st:"TypeScript · React",
+   nt:"스트리머·편집자 앱 · 편집 미리보기(클라이언트 렌더) · 재생"},
+  {id:"cdn",    s:"L", p:1, y:452, nm:"재생 딜리버리", st:"CDN · ⑤ 상세", ghost:true,
+   nt:"세그먼트 캐시 · 서명 URL로 원본 직접 노출 차단"},
+  {id:"ex-chat",  s:"R", p:1, y:72,  nm:"치지직 / SOOP", st:"«external»", nt:"방송 플랫폼 · 채팅 소스"},
+  {id:"ex-google",s:"R", p:1, y:300, nm:"Google",       st:"«external · OIDC»", nt:"로그인 전용 — 업로드 권한과 별개"},
+  {id:"ex-yt",    s:"R", p:1, y:542, nm:"YouTube",      st:"«external · OAuth»", nt:"업로드 · CC 등록 · 채널 권한 토큰"},
+  {id:"ex-pg",    s:"R", p:3, y:760, nm:"결제 시스템",   st:"«external · PG»", nt:"구독 결제 · 종량 과금"},
 ];
 
-/* ===== 흐름 ===== */
 const FLOWS = {
-  1:{nm:"실시간", tag:"송출·채팅 → 감지 → 카드"},
-  2:{nm:"제작",   tag:"작업 큐 → 렌더 → 업로드"},
-  3:{nm:"저장소", tag:"DB · 캐시 · 객체"},
+  1:{nm:"실시간", tag:"송출·채팅 → 감지 → 카드 → 화면"},
+  2:{nm:"제작",   tag:"작업 큐 → 워커 4종 → 상태 회신"},
+  3:{nm:"저장",   tag:"PostgreSQL · S3"},
+  4:{nm:"권한",   tag:"업로드 2단 검사"},
   0:{nm:"클라이언트·외부", tag:"플러그인·웹 · 외부 연동"},
 };
 
@@ -224,7 +245,6 @@ const wrap = document.getElementById("wrap");
 const svg  = document.getElementById("wires");
 const ALL = [...NODES, ...SIDES];
 const byId = id => ALL.find(n=>n.id===id);
-const phaseOf = id => byId(id).p;
 
 const boundary = document.createElement("div");
 boundary.id = "boundary";
@@ -244,12 +264,12 @@ for(const b of BANDS){
 
 for(const n of NODES){
   const el = document.createElement("div");
-  el.className = "node " + (n.kind==="store"?"store":n.kind==="bus"?"bus":"prog");
+  el.className = "node " + (n.growth?"growth":n.kind==="store"?"store":"prog");
   el.id = n.id; el.dataset.node = n.id; el.dataset.phase = n.p;
   Object.assign(el.style,{left:n.x+"px",top:n.y+"px",width:n.w+"px",height:n.h+"px"});
-  if(n.kind==="bus"){
+  if(n.growth){
     el.innerHTML = `<div class="nm">${n.nm}</div><div class="nt">${n.nt}</div>`
-      + `<div class="bd" style="margin:0"><span class="ph">P${n.p}</span></div>`;
+      + `<div class="bd" style="margin:0"><span class="ph g">성장기</span></div>`;
   } else {
     el.innerHTML = `<div class="nm">${n.nm}</div><div class="nt">${n.nt}</div>`
       + `<div class="bd">${n.tech?`<span class="kd">${n.tech}</span>`:""}`
@@ -261,7 +281,7 @@ for(const n of NODES){
 
 for(const s of SIDES){
   const el = document.createElement("div");
-  el.className = "node " + (s.s==="L"?"face":"ext");
+  el.className = "node " + (s.s==="L"?"face":"ext") + (s.ghost?" ghost":"");
   el.id = s.id; el.dataset.node = s.id; el.dataset.phase = s.p;
   Object.assign(el.style,{left:(s.s==="L"?LSIDE:RSIDE)+"px",top:s.y+"px",width:"156px"});
   el.innerHTML = `<div class="nm">${s.nm}</div><div class="st">${s.st}</div><div class="nt">${s.nt}</div>`;
@@ -283,55 +303,69 @@ const P = (id, side, o=0) => {
 };
 const pt = (x,y) => ({x,y});
 
-/* ===== 연결 (f=흐름 · proto=프로토콜 라벨) ===== */
+/* ===== 연결 ===== */
 const EDGES = [
-  /* ── 클라이언트 → 백엔드 ── */
-  {f:0, l:"SRT 송출", p:[P("plugin","r",-6), pt(190,box("plugin").cy-6),
-        pt(190,box("media").cy-6), P("media","l",-6)]},
-  {f:0, l:"핫키 마킹 · REST", p:[P("plugin","r",6), pt(184,box("plugin").cy+6),
-        pt(184,box("core").cy-40), P("core","l",-40)]},
-  {f:0, l:"REST", p:[P("web","r",-6), pt(196,box("web").cy-6),
-        pt(196,box("core").cy), P("core","l",0)]},
-  {f:0, l:"SSE 실시간 갱신", to:"web", p:[P("core","l",40), pt(206,box("core").cy+40),
-        pt(206,box("web").cy+18), P("web","r",18)]},
-  {f:0, l:"저지연 재생 (LL-HLS)", p:[P("web","r",6), pt(178,box("web").cy+6),
-        pt(178,box("media").cy+30), P("media","l",30)]},
+  /* 클라이언트 · 제어 */
+  {f:0, l:"SRT 송출 (영상 + 오디오 트랙)", p:[P("plugin","r",-12), pt(192,box("plugin").cy-12),
+        pt(192,box("media").cy-20), P("media","l",-20)]},
+  {f:0, l:"start · stop · heartbeat (REST)", p:[P("plugin","r",12), pt(184,box("plugin").cy+12),
+        pt(184,box("core").cy-34), P("core","l",-34)]},
+  {f:0, l:"REST", p:[P("web","r",-10), pt(200,box("web").cy-10), pt(200,box("core").cy), P("core","l",0)]},
+  {f:0, l:"SSE (Outbox 이벤트)", p:[P("core","l",34), pt(176,box("core").cy+34),
+        pt(176,box("web").cy+22), P("web","r",22)]},
+  {f:1, l:"LL-HLS 오리진", p:[P("media","l",30), pt(168,box("media").cy+30),
+        pt(168,box("cdn").cy), P("cdn","r")]},
+  {f:1, l:"재생 (서명 URL)", p:[P("cdn","t"), P("web","b")]},
 
-  /* ── 실시간 내부 (이벤트 버스) ── */
-  {f:1, l:"방송 시작·종료 (REST)", p:[P("media","b",50), pt(box("media").cx+50, box("core").t)]},
-  {f:1, l:"채팅 이벤트", p:[P("chat","b"), pt(box("chat").cx, box("kafka").t)]},
-  {f:1, l:"채팅 구독 · 감지 결과", both:true, p:[P("detect","b"), pt(box("detect").cx, box("kafka").t)]},
-  {f:1, l:"카드 생성 (감지 결과)", to:"core", p:[pt(box("core").cx-30, box("kafka").b),
-        pt(box("core").cx-30, box("core").t)]},
+  /* 실시간 */
+  {f:1, l:"수집 시작·중지 (Lease)", p:[pt(776,box("core").t), pt(776,box("chat").b)]},
+  {f:0, l:"채팅 수집 (공식 API · WS)", both:true, p:[P("chat","t"), pt(box("chat").cx,48),
+        pt(1736,48), pt(1736,box("ex-chat").cy), P("ex-chat","l")]},
+  {f:1, l:"채팅 집계 (윈도우)", p:[P("chat","b",60), pt(836,214), pt(1536,214), P("redis","b")]},
+  {f:1, l:"집계 읽기 · 감지 상태", both:true, p:[P("detect","r"), P("redis","l")]},
+  {f:1, l:"카드 후보 (멱등키)", p:[P("detect","b",-100), pt(1056,238), pt(880,238), pt(880,box("core").t)]},
 
-  /* ── 제작 (작업 큐 → 워커) ── */
-  {f:2, l:"렌더·업로드 작업", to:"kafka", p:[pt(box("core").cx+30, box("core").t),
-        pt(box("core").cx+30, box("kafka").b)]},
-  {f:2, l:"작업 소비", to:"worker", p:[pt(box("worker").cx, box("kafka").b),
-        pt(box("worker").cx, box("worker").t)]},
-  {f:2, l:"작업 상태 보고 (REST)", to:"core", p:[P("worker","l",-22), P("core","r",-22)]},
+  /* 정합성 · 팬아웃 */
+  {f:3, l:"카드 + Outbox 한 트랜잭션 (JDBC)", p:[P("core","b",-320), pt(266,440), pt(226,440),
+        pt(226,730), pt(box("pg").cx,730), P("pg","t")]},
+  {f:1, l:"SSE 팬아웃 (Pub/Sub) · 세션·캐시", both:true, p:[P("core","r",-45),
+        pt(986,box("core").cy-45), pt(986,250), pt(1636,250), P("redis","b",100)]},
 
-  /* ── 저장소 ── */
-  {f:3, l:"JDBC", p:[P("core","b",-170), pt(box("core").cx-170, 466),
-        pt(box("db").cx, 466), P("db","t")]},
-  {f:3, l:"세션 · 캐시", p:[P("core","b",-80), pt(box("core").cx-80, 480),
-        pt(box("redis").cx, 480), P("redis","t")]},
-  {f:3, l:"세그먼트 · VOD", p:[P("media","b",-90), pt(box("media").cx-90, 640),
-        pt(box("s3").cx, 640), P("s3","b")]},
-  {f:3, l:"원본 · 산출물", both:true, p:[P("worker","b"), pt(box("worker").cx, box("s3").t)]},
+  /* 제작 */
+  {f:2, l:"작업 발행 (jobId 멱등)", p:[P("core","b",0), pt(586,730), pt(box("sqs").cx,730), P("sqs","t")]},
+  {f:2, l:"subtitle-jobs", p:[P("sqs","t",-70), pt(706,696), pt(box("w-sub").cx,696), P("w-sub","b")]},
+  {f:2, l:"preview-jobs", p:[P("sqs","t",0), P("w-prev","b")]},
+  {f:2, l:"render-jobs", p:[P("sqs","t",70), pt(846,684), pt(box("w-render").cx,684), P("w-render","b")]},
+  {f:2, l:"upload-jobs", p:[P("sqs","t",110), pt(886,672), pt(box("w-upload").cx,672), P("w-upload","b")]},
+  {f:2, l:"작업 상태 · 완료 · 실패 (REST)", ends:["band-wk","core"],
+   p:[pt(1200,500), pt(1200,440), pt(866,440), pt(866,box("core").b)]},
 
-  /* ── 외부 연동 ── */
-  {f:0, l:"채팅 수집 (WebSocket)", both:true, p:[P("chat","t"), pt(box("chat").cx,50),
-        pt(1712,50), pt(1712,box("ex-chat").cy), P("ex-chat","l")]},
-  {f:0, l:"업로드 · CC (YouTube API)", both:true, p:[P("worker","r"), pt(1712,box("worker").cy),
-        pt(1712,box("ex-yt").cy), P("ex-yt","l")]},
-  {f:0, l:"OAuth", both:true, p:[P("core","r",30), pt(1040,box("core").cy+30),
-        pt(1040,485), pt(1730,485), P("ex-google","l")]},
-  {f:0, l:"구독 결제 (PG API)", both:true, p:[P("core","b",164), pt(box("core").cx+164, 644),
-        pt(1730,644), pt(1730,box("ex-pg").cy), P("ex-pg","l")]},
+  /* 권한 */
+  {f:4, l:"작업 생성 시 1차 검사", both:true, p:[P("core","r",35), P("gate","l",35)]},
+  {f:4, l:"업로드 직전 2차 검사", both:true, p:[P("w-upload","t",-110), pt(1426,452),
+        pt(1256,452), P("gate","b",100)]},
+
+  /* 저장 */
+  {f:3, l:"CMAF 세그먼트 (라이브 1h → VOD 60일)", p:[P("media","b",60), pt(456,226),
+        pt(946,226), pt(946,736), pt(box("s3").cx,736), P("s3","t")]},
+  {f:3, l:"채팅 아카이브 (JSONL)", p:[P("chat","b",120), pt(896,202), pt(966,202),
+        pt(966,750), pt(1206,750), P("s3","t",50)]},
+  {f:3, l:"원본 읽기 · 산출물 쓰기", both:true, ends:["band-wk","s3"],
+   p:[pt(1256,690), pt(1256,box("s3").t)]},
+
+  /* 외부 */
+  {f:0, l:"업로드 · CC (YouTube Data API)", both:true, p:[P("w-upload","r"), P("ex-yt","l")]},
+  {f:0, l:"Google OIDC (로그인)", both:true, p:[P("core","b",330), pt(916,464),
+        pt(1716,464), pt(1716,box("ex-google").cy), P("ex-google","l")]},
+  {f:0, l:"구독 결제 (PG API)", both:true, p:[P("core","b",300), pt(886,476),
+        pt(1730,476), pt(1730,box("ex-pg").cy), P("ex-pg","l")]},
+
+  /* 성장기 */
+  {f:1, l:"성장기: 이벤트 재처리 · 다중 소비", proto0:true,
+   p:[P("core","b",20), pt(606,900), pt(box("kafka").cx,900), P("kafka","t")]},
 ];
 
-/* ===== 배선 그리기 ===== */
+/* ===== 배선 ===== */
 const NS = "http://www.w3.org/2000/svg";
 svg.setAttribute("width", wrap.offsetWidth);
 svg.setAttribute("height", wrap.offsetHeight);
@@ -347,7 +381,6 @@ labelSvg.setAttribute("width", wrap.offsetWidth);
 labelSvg.setAttribute("height", wrap.offsetHeight);
 const labelQueue = [];
 
-/* 각 연결의 양 끝이 어느 노드인지 — 강조·단계에 쓴다 */
 function endsOf(e){
   const hit = p => {
     for(const el of document.querySelectorAll(".node")){
@@ -358,6 +391,7 @@ function endsOf(e){
   };
   return [hit(e.p[0]), hit(e.p[e.p.length-1])].filter(Boolean);
 }
+const isGrowth = id => id==="kafka";
 
 EDGES.forEach((e,i)=>{
   e.ends = e.ends ?? endsOf(e);
@@ -369,11 +403,12 @@ EDGES.forEach((e,i)=>{
   if(e.both) path.setAttribute("marker-start","url(#ah2)");
   if(e.f===0 || e.proto0) path.classList.add("proto0");
   path.dataset.flow = e.f; path.dataset.idx = i; path.dataset.ends = e.ends.join(",");
+  if(e.ends.some(isGrowth)) path.dataset.growth = "1";
   svg.appendChild(path);
   if(e.l) labelQueue.push({edge:e, idx:i});
 });
 
-/* ---------- 라벨 배치: 블록·다른 라벨을 피해 앉힌다 ---------- */
+/* ---------- 라벨 배치 ---------- */
 const nodeBoxes = () => [...document.querySelectorAll(".node")].map(el => ({
   l:el.offsetLeft, t:el.offsetTop, r:el.offsetLeft+el.offsetWidth, b:el.offsetTop+el.offsetHeight
 }));
@@ -388,6 +423,7 @@ for(const {edge, idx} of labelQueue){
   t.setAttribute("text-anchor","middle");
   t.textContent = edge.l;
   t.dataset.flow = edge.f; t.dataset.idx = idx; t.dataset.ends = edge.ends.join(",");
+  if(edge.ends.some(isGrowth)) t.dataset.growth = "1";
   labelSvg.appendChild(t);
 
   const segs = [];
@@ -404,20 +440,18 @@ for(const {edge, idx} of labelQueue){
       else { cands.push({x:x+3, y}); cands.push({x:x-3, y}); }
     }
   }
-
   const free = (c, pad=2) => {
     t.setAttribute("x", c.x); t.setAttribute("y", c.y);
     const r = rectOf(t);
     return !blocks.some(bx=>clash(r,bx,pad)) && !placed.some(pr=>clash(r,pr,pad));
   };
-
   let chosen = cands[0], clean = false;
   for(const c of cands){ if(free(c)){ chosen = c; clean = true; break; } }
   if(!clean){
     const base = cands[0];
     outer:
     for(const dy of [3,-3,4,-4,6,-6,10,-10,16,-16,24,-24,32,-32,56,-56,72,-72]){
-      for(const dx of [0,-70,70,-140,140,-180,180]){
+      for(const dx of [0,-70,70,-140,140,-180,180,-240,240]){
         const c = {x:base.x+dx, y:base.y+dy};
         if(free(c, 0)){ chosen = c; clean = true; break outer; }
       }
@@ -437,7 +471,7 @@ for(const [no,f] of Object.entries(FLOWS)){
   flowsEl.appendChild(c);
 }
 
-/* ===== 캔버스 이동·확대 ===== */
+/* ===== 캔버스 ===== */
 const stage = document.getElementById("stage"), inner = document.getElementById("inner");
 const zoomPct = document.getElementById("zoomPct");
 const ZMIN = .08, ZMAX = 3;
@@ -487,12 +521,16 @@ document.getElementById("btnOut").addEventListener("click", ()=>zoomCenter(1/1.2
 let pinned = null;
 const lines = () => [...svg.querySelectorAll("path[data-idx]"), ...labelSvg.querySelectorAll("text[data-idx]")];
 
+/* 끝점이 묶음(band-xx)이면 그 묶음의 노드 전체를 켠다 */
 function litFrom(near){
-  document.querySelectorAll(".node").forEach(n=>n.classList.toggle("lit", near.has(n.id)));
-  document.querySelectorAll(".band").forEach(b=>{
-    const mem = NODES.filter(n=>n.b===b.dataset.band).map(n=>n.id);
-    b.classList.toggle("lit", mem.some(id=>near.has(id)));
-  });
+  const ids = new Set();
+  for(const x of near){
+    if(x.startsWith("band-")) NODES.filter(n=>n.b===x.slice(5)).forEach(n=>ids.add(n.id));
+    else ids.add(x);
+  }
+  document.querySelectorAll(".node").forEach(n=>n.classList.toggle("lit", ids.has(n.id)));
+  document.querySelectorAll(".band").forEach(b=>b.classList.toggle("lit",
+    near.has(b.id) || NODES.filter(n=>n.b===b.dataset.band).some(n=>ids.has(n.id))));
 }
 function clearFocus(){
   wrap.classList.remove("focus");
@@ -504,7 +542,8 @@ function focusNode(id){
   const near = new Set([id]);
   lines().forEach(l=>{
     const ends = l.dataset.ends.split(",");
-    const on = ends.includes(id);
+    const band = NODES.find(n=>n.id===id);
+    const on = ends.includes(id) || (band && ends.includes("band-"+band.b));
     l.classList.toggle("on", on);
     if(on) ends.forEach(x=>near.add(x));
   });
@@ -534,7 +573,6 @@ function setPin(next){
   document.querySelectorAll(".fchip").forEach(c=>c.classList.remove("act"));
   showPinned();
 }
-
 document.addEventListener("mouseover", e=>{
   if(pinned) return;
   const n = e.target.closest(".node"); if(n) return focusNode(n.id);
@@ -556,10 +594,15 @@ document.addEventListener("keydown", e=>{
   setPin(null); psel.clear(); applyPhase();
 });
 
-/* ---------- 개발 단계 필터 (여러 개 동시 선택) ---------- */
+/* ---------- 개발 단계 필터 ---------- */
 const phasesEl = document.getElementById("phases");
 const psel = new Set();
-const phaseOfEnd = id => { const n = byId(id); return n ? n.p : 1; };
+/* 성장기 요소는 단계 축 밖이라 항상 남긴다 */
+const phaseOfEnd = id => {
+  if(id.startsWith("band-")) return Math.min(...NODES.filter(n=>n.b===id.slice(5)).map(n=>n.p));
+  const n = byId(id);
+  return n && n.p !== "g" ? n.p : 1;
+};
 for(const [no,ph] of Object.entries(PHASES)){
   const b = document.createElement("button");
   b.type = "button"; b.className = "pchip"; b.dataset.phase = no;
@@ -568,18 +611,18 @@ for(const [no,ph] of Object.entries(PHASES)){
   phasesEl.appendChild(b);
 }
 phasesEl.insertAdjacentHTML("beforeend",
-  `<span class="phint">그 단계에 <b>새로 만드는</b> 시스템 요소만 남습니다 · 셋 다 켜면 전체 · ④ 골격은 P1에 거의 완성이라 P2는 새 요소가 없습니다(기존 프로그램 내부 확장)</span>`);
+  `<span class="phint">그 단계에 <b>새로 만드는</b> 실행 단위만 남습니다 · 셋 다 켜면 전체 · 점선 회색(Kafka)은 규모가 커지면 도입하는 것이라 단계 축 밖이며 항상 표시됩니다</span>`);
 
 function applyPhase(){
   const on = psel.size > 0;
   wrap.classList.toggle("pfilter", on);
   document.querySelectorAll(".pchip").forEach(c=>c.classList.toggle("on", psel.has(c.dataset.phase)));
   document.querySelectorAll(".node[data-phase]").forEach(n=>
-    n.classList.toggle("poff", on && !psel.has(n.dataset.phase)));
+    n.classList.toggle("poff", on && n.dataset.phase!=="g" && !psel.has(n.dataset.phase)));
   document.querySelectorAll(".band[data-phase]").forEach(n=>
     n.classList.toggle("poff", on && !psel.has(n.dataset.phase)));
   lines().forEach(l=>{
-    /* 연결 단계 = 양 끝 중 늦은 쪽 — 두 끝이 다 있어야 이을 수 있다 */
+    if(l.dataset.growth) return l.classList.remove("poff");
     const p = String(Math.max(...l.dataset.ends.split(",").map(phaseOfEnd)));
     l.classList.toggle("poff", on && !psel.has(p));
   });
