@@ -92,7 +92,7 @@
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.4 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 v2.2 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.5 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 v3.1 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
 </header>
 
 <div id="chart">
@@ -167,7 +167,7 @@ const COLS = [
       {n:"공지사항", s:"점검 · 업데이트 안내"},
     ]},
     {n:"서비스 상태", scr:true, s:"장애·점검 공개 고지", c:[
-      {n:"기능별 상태", s:"인제스트 · 편집 · 업로드"},
+      {n:"기능별 상태", s:"송출 수신 · 편집 · 업로드"},
       {n:"장애 이력 · 진행 상황"},
     ]},
     {n:"약관 · 정책", scr:true, c:[
@@ -242,7 +242,7 @@ const COLS = [
   {n:"클립 제작 · 보관", web:true, s:"글로벌 내비 2", c:[
     {n:"클립 편집기", scr:true, u:"22", s:"컨텍스트 진입 — 카드 또는 보관함 편집본에서만", c:[
       {n:"타임라인", c:[
-        {n:"구간 선택", s:"5초 ~ 3분"},
+        {n:"구간 선택", s:"5초~3분"},
         {n:"웨이브폼", s:"트랙별 파형"},
       ]},
       {n:"오디오 트랙 패널", c:[
@@ -312,7 +312,7 @@ const COLS = [
     ]},
     {n:"설정", scr:true, c:[
       {n:"채널 연동", tag:"S", u:"02·03", ob:true, c:[
-        {n:"방송 채널", u:"02", s:"치지직/SOOP · 연동 · 해제"},
+        {n:"방송 채널", u:"02", s:"치지직 / SOOP · 연동 · 해제"},
         {n:"유튜브 채널", u:"03", c:[
           {n:"연동 · 해제", s:"OAuth"},
           {n:"업로드 대상 채널 선택", s:"채널 여러 개 운영 시"},
@@ -346,7 +346,7 @@ const COLS = [
   ]},
   {n:"운영자 콘솔", s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계", c:[
     {n:"스트리머 · 계정 관리"},
-    {n:"시스템 모니터링", s:"인제스트 · 렌더 큐 · 스토리지"},
+    {n:"시스템 모니터링", s:"송출 수신 · 렌더 큐 · 스토리지"},
     {n:"CS · 분쟁 대응"},
     {n:"정산 · 매출 관리"},
   ]},
