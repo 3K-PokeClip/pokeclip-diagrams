@@ -105,13 +105,14 @@
   .notebox .ob{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 5px}
   .notebox .uc{font-family:var(--mono);font-size:9px;background:#eef0f4;border:1px solid #d3d7dd;color:var(--sub);padding:0 4px}
   .stc{font-family:var(--mono);font-size:9px;border:1px dashed var(--faint);color:var(--sub);padding:0 4px;margin-left:4px}
+  .surb{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 5px;margin-left:5px;letter-spacing:.05em}
 </style>
 </head>
 <body>
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · 표면 <b>4개</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔 — 접근 주체·인증·실행 환경으로 분리) · 노드 <b>170</b> · v3.0 · 2026-07-23 — 웹 앱 진입: 구글 로그인 → 글로벌 메뉴 6개 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · 표면 <b>4개</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔 — 접근 주체·인증·실행 환경으로 분리) · 노드 <b>170</b> · v3.1 · P1 전용 뷰 <b>?p=1</b> · 2026-07-23 — 웹 앱 진입: 구글 로그인 → 글로벌 메뉴 6개 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
   <div class="phases" id="phases"></div>
 </header>
 
@@ -127,7 +128,7 @@
     <svg id="cwires"></svg>
     <div id="rootRow"><div class="n" id="rootN"><div class="nm">PokeClip</div></div></div>
     <div class="entry" id="entryLogin"><div class="n" data-phase="1"><div class="nm">구글 로그인<span class="uc">UC-01</span></div><div class="sb">OAuth · 스트리머/편집자 공통<span class="ob">1회</span> 약관 동의(이용약관 · 개인정보 수집 · 마케팅 선택)</div></div></div>
-    <div class="entry" id="entryHome"><div class="n" data-phase="1"><div class="nm">웹 앱<span class="tag">로그인 후</span></div><div class="sb">글로벌 내비게이션 — 어느 화면에서든 6메뉴 접근</div></div></div>
+    <div class="entry" id="entryHome"><div class="n" data-phase="1"><div class="nm">웹 앱<span class="surb">표면</span><span class="tag">로그인 후</span></div><div class="sb">채널 선택이 먼저 — 선택한 채널에서의 내 권한으로 글로벌 6메뉴가 노출된다(같은 사용자가 채널마다 다른 역할)</div></div></div>
     <div id="cols"></div>
   </div>
 </div>
@@ -162,7 +163,7 @@
 
 <script>
 const COLS = [
-  {n:"공개 웹", p:1, s:"비로그인 · 누구나 접근", c:[
+  {n:"공개 웹", sur:true, p:1, s:"비로그인 · 누구나 접근", c:[
     {n:"랜딩 · 서비스 소개", scr:true, p:3, c:[
       {n:"핵심 가치", s:"방송이 끝나기 전에 클립이 올라간다"},
       {n:"기능 소개", s:"자동 하이라이트 · 멀티트랙 편집 · 원클릭 업로드"},
@@ -198,7 +199,7 @@ const COLS = [
       {n:"오픈소스 라이선스", tbd:true, s:"OBS·FFmpeg 계열 의존성 확인 후 확정"},
     ]},
   ]},
-  {n:"OBS 플러그인", tag:"S", s:"스트리머 로컬 앱 · Stream Key 인증(별도 로그인 없음)", u:"04·11·12", c:[
+  {n:"OBS 플러그인", sur:true, tag:"S", s:"스트리머 로컬 앱 · Stream Key 인증(별도 로그인 없음)", u:"04·11·12", c:[
     {n:"연결 설정", u:"04", ob:true, c:[
       {n:"Stream Key 등록", s:"웹에서 발급 → 붙여넣기 = 계정·채널 연결"},
       {n:"인증 실패 안내", s:"오타 · 만료 · 폐기된 키 · 재발급 경로"},
@@ -303,7 +304,7 @@ const COLS = [
       {n:"원클릭 지정", u:"26", s:"핫키/카드 원클릭 자동 업로드에 사용할 템플릿 선택"},
     ]},
   ]},
-  {n:"업로드 · 승인함", web:true, p:1, s:"글로벌 메뉴 3 — 전역 내비에 대기 건수 배지", c:[
+  {n:"업로드 · 승인함", web:true, p:1, s:"글로벌 메뉴 3 — 역할별 노출: 편집자 = 내 업로드·내 요청 / 스트리머 = + 승인 대기함(대기 건수 배지)", c:[
     {n:"업로드 상태", scr:true, u:"27", c:[
       {n:"진행 · 결과"},
       {n:"실패 복구", s:"재인증 · 수동 재시도 · 취소"},
@@ -369,7 +370,7 @@ const COLS = [
       {n:"내 문의 내역", u:"10", s:"접수 상태 · 답변 확인"},
     ]},
   ]},
-  {n:"운영자 콘솔", p:3, s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계", c:[
+  {n:"운영자 콘솔", sur:true, p:3, s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계(①에 범위 외 선언)", c:[
     {n:"스트리머 · 계정 관리"},
     {n:"시스템 모니터링", s:"송출 수신 · 렌더 큐 · 스토리지"},
     {n:"CS · 분쟁 대응"},
@@ -396,6 +397,7 @@ function phaseOfNode(d, inherited){
 
 function nodeHTML(d){
   return `<div class="nm">${d.n}`+
+    (d.sur?`<span class="surb">표면</span>`:"")+
     (d.tag?`<span class="tag">${d.tag}</span>`:"")+
     (d.u?`<span class="uc">UC-${d.u}</span>`:"")+
     (d.ob?`<span class="ob">1회</span>`:"")+
@@ -555,6 +557,9 @@ phasesEl.addEventListener("click", e=>{
   applyPhase();
 });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ sel.clear(); applyPhase(); } });
+/* ?p=1 (또는 ?p=1,2) — 발표·공유용 단계 고정 링크. P1 전용 뷰 = ?p=1 */
+(new URLSearchParams(location.search).get("p")||"").split(",").filter(x=>PHASES[x]).forEach(x=>sel.add(x));
+if(sel.size) applyPhase();
 </script>
 </body>
 </html>

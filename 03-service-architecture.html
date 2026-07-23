@@ -120,7 +120,7 @@
   <div id="inner">
     <header class="page">
       <h1>Service Architecture</h1>
-      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.6 — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · <b>각 블록은 논리적 비즈니스 기능(Capability)이며 독립 배포 단위가 아님</b> — 실행 단위 매핑은 ④ 시스템 아키텍처<br>
+      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.7 · P1 전용 뷰 <b>?p=1</b> — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · <b>각 블록은 논리적 비즈니스 기능(Capability)이며 독립 배포 단위가 아님</b> — 실행 단위 매핑은 ④ 시스템 아키텍처<br>
       선이 <b>묶음 테두리</b>에 닿으면 그 묶음에 <b>관여</b>한다는 뜻이고(웹 앱처럼 범위가 넓을 때), <b>블록</b>에 닿으면 그 블록과 <b>직접</b> 주고받는다는 뜻입니다 · 빗금 배경 = 저장소 · 검은 배지 = 그 블록이 <b>소유(최종 책임)하는 데이터</b> — 같은 데이터를 다른 블록이 고치지 않는다 · 블록·흐름 칩을 클릭하면 관련 요소만 남습니다</div>
     </header>
     <div id="wrap">
@@ -185,7 +185,7 @@ const NODES = [
 
   /* 아카이브 */
   {id:"ar-vod",    b:"ar", c:3, r:1, nm:"VOD 전환 · 보관", uc:"UC-15·21", kind:"보관 60일", store:true, own:"VOD",
-   nt:"종료 시 매니페스트 확정(파일 이동 없음) · 60일 수명 관리 · 만료 카드는 챕터로 재활성화"},
+   nt:"BroadcastStopped → 파이널라이즈(매니페스트 확정 · 파일 이동 없음) → READY → 60일 만료 · 만료 카드는 챕터로 재활성화"},
 
   /* 제작 파이프라인 */
   {id:"mk-edit",   b:"mk", c:1, r:1, nm:"클립 편집", uc:"UC-22", own:"ClipProject",
@@ -193,9 +193,9 @@ const NODES = [
   {id:"mk-render", b:"mk", c:2, r:1, nm:"렌더 · 출력", uc:"UC-22·23",
    nt:"렌더 큐(비동기) · 재출력은 VOD 보관 60일 내"},
   {id:"mk-store",  b:"mk", c:3, r:1, nm:"클립 자산 관리", uc:"UC-23·28", kind:"보관 영구", store:true, p:1, own:"ClipAsset",
-   nt:"완성 클립 · 편집본 영구 보관(② 화면명은 '보관함') — P1은 저장만, 목록·재편집·삭제는 P2"},
+   nt:"편집 메타 · 미리보기·렌더 산출물 · 삭제 상태·이력(② '보관함') — P1 저장만, 관리 P2 · S3 객체 수명은 ④"},
   {id:"mk-upload", b:"mk", c:4, r:1, nm:"업로드", uc:"UC-25·26·27", own:"UploadAttempt",
-   nt:"권한 게이트 2단(작업 생성 시 · 업로드 직전) · 기본 비공개 · CC 등록 · 실패 시 재인증·재시도"},
+   nt:"권한 게이트 2단(작업 생성 시 · 업로드 직전) · 기본 비공개 · CC 등록 · 실패 시 재인증·재시도 · 업로드 이력 기록"},
   {id:"mk-approve",b:"mk", c:5, r:1, nm:"승인", uc:"UC-29·30", own:"UploadApproval",
    nt:"권한 부족 시 차단 대신 승인 대기함 · 처리 이력 기록"},
   {id:"mk-stt",    b:"mk", c:1, r:2, nm:"AI 자막", uc:"UC-22", p:2,
@@ -217,7 +217,7 @@ const NODES = [
   {id:"cm-noti",   b:"cm", c:3, r:2, nm:"알림", uc:"UC-08·16",
    nt:"종류별 on/off · 방송 시작 · 승인 · 결제 실패 · VOD 만료 임박"},
   {id:"cm-link",   b:"cm", c:4, r:2, nm:"채널 연동", uc:"UC-02·03", own:"ChannelToken",
-   nt:"치지직 / SOOP · 유튜브 토큰 보관 · 만료·철회 재인증"},
+   nt:"치지직 / SOOP · 유튜브 토큰 보관 · 만료·철회 재인증 · 연동·해제 이력 기록"},
 ];
 
 /* ===== 접점(왼쪽) · 외부 시스템(오른쪽) ===== */
@@ -249,7 +249,7 @@ const svg  = document.getElementById("wires");
 const boundary = document.createElement("div");
 boundary.id = "boundary";
 Object.assign(boundary.style,{left:BX+"px",top:BY+"px",width:BW+"px",height:BH+"px"});
-boundary.innerHTML = "<h2>PokeClip 서비스</h2>";
+boundary.innerHTML = "<h2>PokeClip 서비스 — 논리 Capability · 배포 단위 아님(실행 매핑은 ④)</h2>";
 wrap.appendChild(boundary);
 
 for(const b of BANDS){
@@ -688,6 +688,9 @@ phasesEl.addEventListener("click", e=>{
   psel.has(c.dataset.phase) ? psel.delete(c.dataset.phase) : psel.add(c.dataset.phase);
   applyPhase();
 });
+/* ?p=1 (또는 ?p=1,2) — 발표·공유용 단계 고정 링크. P1 전용 뷰 = ?p=1 */
+(new URLSearchParams(location.search).get("p")||"").split(",").filter(x=>PHASES[x]).forEach(x=>psel.add(x));
+if(psel.size) applyPhase();
 
 window.addEventListener("resize", ()=>{ clearTimeout(window.__t); window.__t = setTimeout(fit,120); });
 fit();

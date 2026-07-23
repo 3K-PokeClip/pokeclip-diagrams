@@ -121,7 +121,7 @@
   <div id="inner">
     <header class="page">
       <h1>System Architecture</h1>
-      <div class="meta">PokeClip · 실행 단위 <b>10</b> = 플러그인 · 웹 · 미디어 서버 · Core API · 채팅 수집기 · 감지기 · 워커 4종 (권한 Gate는 Core 모듈 — 별도 배포 아님 · Kafka는 성장기라 불포함) · 저장소 <b>4</b> · 외부 <b>4</b> · v2.1 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
+      <div class="meta">PokeClip · 실행 단위 <b>10</b> = 플러그인 · 웹 · 미디어 서버 · Core API · 채팅 수집기 · 감지기 · 워커 4종 (권한 Gate는 Core 모듈 · VOD 파이널라이즈는 미디어 서버의 작업 모드 — 별도 배포 아님 · Kafka는 성장기라 불포함) · 저장소 <b>4</b> · 외부 <b>4</b> · v2.2 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
       <b>초기 스택</b> PostgreSQL(+JSONB) · Java 21 Spring Boot/WebFlux · Go+FFmpeg 미디어 · Redis 실시간 집계 · SQS+DLQ 작업 큐 · CMAF/S3 &nbsp;—&nbsp; <b>Kafka는 초기 구성에서 제외</b>, 방송 수·이벤트 소비자가 늘어 재처리·다중 소비가 필요해지는 <b>성장기부터 이벤트 전용</b>으로 도입(작업 큐는 그때도 SQS 유지)<br>
       <b>성능 목표(서버 통제 구간)</b> 채팅 수집 시각 → 카드 표시 <b>p95 2초</b> · 피크 감지 → 카드 표시 <b>p95 1초</b> — "장면 발생 → 카드"는 플랫폼 방송 지연과 시청자 반응 시차가 끼어 서버가 보장할 수 없다<br>
       빗금 = 저장소 · 점선 회색 = 성장기 도입 · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 · 저장소로 향하는 선은 그 시스템의 프로토콜을 씀(JDBC · Redis · SQS · S3 API) · 선이 <b>묶음 테두리</b>에 닿으면 그 묶음 전체가 관여한다는 뜻 · 상자·칩 클릭으로 관련 연결만</div>
@@ -169,7 +169,7 @@ const NODES = [
   /* 실시간 수집 · 감지 */
   {id:"media", b:"rt", x:246, y:72, w:300, h:118, p:1, tech:"Go · FFmpeg",
    nm:"미디어 서버", uc:"UC-04·11·15·18·21",
-   nt:"SRT 수신 · 영상1 + 오디오≤10 트랙 분리 · monitor audio 생성 · CMAF 세그먼트화 → S3 · DVR 1시간 롤링 · VOD 확정은 vod-finalize-job 소비로(종료 순간 장애도 재시도로 확정 · 멱등 broadcastId+ingestEpoch)"},
+   nt:"SRT 수신 · 영상1 + 오디오≤10 트랙 분리 · monitor audio 생성 · CMAF 세그먼트화 → S3 · DVR 1시간 롤링 · VOD 확정은 vod-finalize-job 소비(입력 = S3 세그먼트 + PostgreSQL 방송 상태뿐 — 수신 인스턴스의 로컬 상태 무의존, 어느 인스턴스가 실행해도 동일 · 멱등 broadcastId+ingestEpoch)"},
   {id:"chat", b:"rt", x:626, y:72, w:300, h:118, p:1, tech:"Java 21 · WebFlux",
    nm:"채팅 수집기", uc:"UC-13",
    nt:"치지직 공식 API · SOOP WS · 방송당 한 인스턴스만 활성(Lease) · 플랫폼 반응 시차 보정 · 집계는 Redis, 원본은 30~60초 NDJSON 배치로 S3(방송·시간 키로 중복 방지)"},
@@ -178,7 +178,7 @@ const NODES = [
    nt:"Redis 집계 위 롤링 베이스라인 · 워밍업 전 발행 보류 · 멀티윈도우 합의 · 카드 멱등키 broadcastId + detectorVersion + peakWindowStart"},
   {id:"redis", b:"rt", x:1386, y:72, w:300, h:118, p:1, kind:"store",
    nm:"Redis", uc:"실시간 · 휘발",
-   nt:"채팅 집계 윈도우 · SSE Pub/Sub 팬아웃 · 짧은 캐시 · 세션 — 원본이 아니다. 유실돼도 PostgreSQL과 S3로 화면을 재구성할 수 있어야 한다"},
+   nt:"채팅 집계 윈도우 · SSE Pub/Sub 팬아웃 · 짧은 캐시 · 세션 — 원본이 아니다. 유실 시 감지·SSE만 일시 중단, 복구 후 REST 스냅샷으로 재구성(장애 정책 = 부록 A)"},
 
   /* 애플리케이션 코어 */
   {id:"core", b:"app", x:246, y:300, w:680, h:124, p:1, tech:"Java 21 · Spring Boot",
@@ -189,9 +189,9 @@ const NODES = [
    nt:"별도 배포가 아니라 Core의 모듈(점선) — 작업 생성 시 1차, 실제 업로드 직전 2차로 두 번 검사. 판정 원본은 PostgreSQL. 편집 권한만 가진 편집자의 작업이 그대로 유튜브로 나가지 못하게 막는다"},
 
   /* 비동기 워커 — 같은 이미지, 큐·오토스케일·DLQ는 각자 */
-  {id:"w-sub", b:"wk", x:246, y:542, w:300, h:118, p:2, tech:"Java 21 · STT 엔진 TBD",
+  {id:"w-sub", b:"wk", x:246, y:542, w:300, h:118, p:2, tech:"STT 엔진 TBD",
    nm:"자막 워커", uc:"UC-22",
-   nt:"subtitle-jobs 소비 · 선택된 트랙만 STT · 결과 자막 S3 · 전용 DLQ — 엔진은 미정(TBD)"},
+   nt:"subtitle-jobs 소비 · 선택된 트랙만 STT · 결과 자막 S3 · 전용 DLQ — 엔진 TBD, 후보: CPU whisper.cpp(프로세스 호출) / EC2 GPU Whisper · 관리형 STT는 ADR-013 배제 · Fargate GPU 없음(전제 금지)"},
   {id:"w-prev", b:"wk", x:626, y:542, w:300, h:118, p:1, tech:"FFmpeg",
    nm:"미리보기 워커", uc:"UC-19·22",
    nt:"preview-jobs 소비 · 썸네일 · 구간 웨이브폼(그 부산물 RMS로 무음 트랙 숨김) · 전용 DLQ"},
@@ -205,7 +205,7 @@ const NODES = [
   /* 영속 계층 */
   {id:"pg", b:"data", x:246, y:760, w:300, h:118, p:1, kind:"store",
    nm:"PostgreSQL", uc:"관계형 + JSONB",
-   nt:"계정·권한·방송·카드·레시피(JSONB)·클립·잡 상태 · Outbox 테이블 · 유튜브 refresh token은 KMS 암호화 저장"},
+   nt:"계정·권한·방송·카드·레시피(JSONB)·클립·잡 상태 · Outbox · audit_log(권한·승인·업로드·연동·삭제 이력) · 유튜브 refresh token은 KMS 암호화"},
   {id:"sqs", b:"data", x:626, y:760, w:300, h:118, p:1, kind:"store",
    nm:"SQS + DLQ", uc:"작업 큐",
    nt:"vod-finalize · subtitle · preview · render · upload 다섯 큐, 각각 전용 DLQ · jobId 멱등 · 큐 길이로 오토스케일 · 렌더는 긴 처리에 맞춰 visibility timeout 연장 — 상세 정책은 부록 A"},
@@ -335,6 +335,8 @@ const EDGES = [
   {f:2, l:"작업 발행 (jobId 멱등 · vod-finalize 포함)", p:[P("core","b",0), pt(586,730), pt(box("sqs").cx,730), P("sqs","t")]},
   {f:2, l:"vod-finalize-jobs", to:"media", p:[P("sqs","r",-20), pt(966,box("sqs").cy-20),
         pt(966,244), pt(box("media").cx,244), P("media","b")]},
+  {f:3, l:"방송 상태 (finalize 입력)", to:"pg", p:[P("media","b",-130), pt(266,244), pt(216,244),
+        pt(216,744), pt(box("pg").cx-40,744), P("pg","t",-40)]},
   {f:2, l:"subtitle-jobs", p:[P("sqs","t",-70), pt(706,696), pt(box("w-sub").cx,696), P("w-sub","b")]},
   {f:2, l:"preview-jobs", p:[P("sqs","t",0), P("w-prev","b")]},
   {f:2, l:"render-jobs", p:[P("sqs","t",70), pt(846,684), pt(box("w-render").cx,684), P("w-render","b")]},
@@ -634,6 +636,9 @@ phasesEl.addEventListener("click", e=>{
   psel.has(c.dataset.phase) ? psel.delete(c.dataset.phase) : psel.add(c.dataset.phase);
   applyPhase();
 });
+/* ?p=1 (또는 ?p=1,2) — 발표·공유용 단계 고정 링크. P1 전용 뷰 = ?p=1 */
+(new URLSearchParams(location.search).get("p")||"").split(",").filter(x=>PHASES[x]).forEach(x=>psel.add(x));
+if(psel.size) applyPhase();
 
 window.addEventListener("resize", ()=>{ clearTimeout(window.__t); window.__t = setTimeout(fit,120); });
 fit();

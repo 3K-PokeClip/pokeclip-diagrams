@@ -146,7 +146,7 @@
   <div id="inner">
     <header class="page">
       <h1>Use Case Diagram</h1>
-      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.5 — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
+      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.6 — P1 전용 뷰: 주소에 <b>?p=1</b> — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
     </header>
 
     <div id="wrap">
@@ -221,7 +221,7 @@ const GROUPS = {
     {id:10, name:"문의·지원 요청", note:"가입 전·후 공통 · 접수 상태·답변 확인", actors:["S","E"]},
   ]},
   live:{title:"방송 · 하이라이트", items:[
-    {id:11, name:"PokeClip 동시 송출 시작·종료", note:"OBS 플러그인 경유 · 영상 1 + 오디오 최대 10트랙 — 시스템은 수신·트랙 분리 저장(되감기 1시간 버퍼) · 예외: 비정상 단절은 heartbeat 유예 후 판정, 재접속 시 이어붙임", actors:["S"]},
+    {id:11, name:"PokeClip 동시 송출 시작·종료", note:"OBS 플러그인 경유 · 영상 1 + 오디오 최대 10트랙 — 시스템은 수신·트랙 분리 저장(되감기 1시간 버퍼) · stop = 즉시 종료 확정 · heartbeat 만료 = 재연결 유예 → 실패 시에만 종료(순단≠종료)", actors:["S"]},
     {id:12, name:"OBS 플러그인 핫키 마킹", note:"우리 플러그인의 전역 핫키(플랫폼 기능 아님) → 앞뒤 구간이 수동 하이라이트로 승격 · 대시보드 카드 표시", actors:["S"]},
   ]},
   auto:{title:"시스템 자동", auto:true, items:[
@@ -246,7 +246,7 @@ const GROUPS = {
     {id:23, name:"편집본 저장·불러오기·재출력", note:"재출력은 VOD 보관 60일 내", actors:["S","E"]},
     {id:24, name:"업로드 템플릿 관리", note:"저장 · 지정 · 수정 · 삭제", actors:["S","E"]},
     {id:25, name:"유튜브 업로드", note:"기본 비공개 · 제목·설명 확정 · CC 등록 — 권한 없으면 UC-29로 분기", actors:["S","E","Y"], perm:"편집자: 직접 업로드 권한"},
-    {id:26, name:"원클릭 자동 업로드", note:"템플릿 지정 전제 · 핫키 또는 카드 액션에서 편집 화면 없이 — 권한 없으면 UC-29로 분기", actors:["S","E","Y"], perm:"편집자: 원클릭 권한"},
+    {id:26, name:"원클릭 자동 업로드", note:"사람이 핫키·카드에서 한 번 클릭 → 이후 무인 진행(편집 화면 없이) · 완전 무인 자동 업로드는 별도 개념으로 두지 않음(ADR-012) · 템플릿 지정 전제 — 권한 없으면 UC-29로 분기", actors:["S","E","Y"], perm:"편집자: 원클릭 권한"},
     {id:27, name:"업로드 상태 확인·복구", note:"진행·결과 확인 · 실패 시 재인증·수동 재시도·취소 · 예외: 성공 여부 불명확 시 채널 조회로 확정 후 재시도(무조건 재업로드 금지)", actors:["S","E","Y"]},
     {id:28, name:"클립·편집본 삭제", note:"사용자 삭제권 · 업로드된 유튜브 영상은 미삭제", actors:["S","E"]},
     {id:29, name:"업로드 승인 요청", note:"UC-25·26에서 권한 부족 시 차단 대신 승인 대기함으로 · 예외: 대기 중 권한 회수 시 요청 무효", actors:["E"]},
@@ -567,6 +567,9 @@ phasesEl.addEventListener("click", e=>{
   sel.has(c.dataset.phase) ? sel.delete(c.dataset.phase) : sel.add(c.dataset.phase);
   applyPhase();
 });
+/* ?p=1 (또는 ?p=1,2) — 발표·공유용 단계 고정 링크. P1 전용 뷰 = ?p=1 */
+(new URLSearchParams(location.search).get("p")||"").split(",").filter(x=>PHASES[x]).forEach(x=>sel.add(x));
+if(sel.size) applyPhase();
 
 function refresh(){ layoutActors(); drawWires(); showPinned(); }
 window.addEventListener("resize",()=>{
