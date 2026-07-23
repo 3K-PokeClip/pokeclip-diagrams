@@ -107,7 +107,7 @@
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.6 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.7 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
   <div class="phases" id="phases"></div>
 </header>
 
@@ -285,7 +285,7 @@ const COLS = [
       ]},
     ]},
     {n:"보관함", scr:true, p:2, s:"영구 보관", c:[
-      {n:"클립 목록", u:"27·28", s:"렌더 결과물 — 업로드 상태 · 삭제"},
+      {n:"클립 목록", u:"27·28", p:2, s:"렌더 결과물 — 업로드 상태 · 삭제"},
       {n:"편집본 목록", u:"23·28", s:"편집 설정 — 재편집 · 삭제"},
       {n:"재출력 가능 여부", u:"23", s:"VOD 만료 시 불가 · 만료일 표시"},
       {n:"삭제 정책 안내", u:"28", s:"영구 삭제 · 유튜브 업로드본에는 영향 없음"},
@@ -297,13 +297,13 @@ const COLS = [
     ]},
   ]},
   {n:"운영 · 계정", web:true, p:1, s:"글로벌 내비 3", c:[
-    {n:"업로드 · 승인", scr:true, p:2, c:[
+    {n:"업로드 · 승인", scr:true, p:1, c:[
       {n:"업로드 상태", u:"27", c:[
         {n:"진행 · 결과"},
         {n:"실패 복구", s:"재인증 · 수동 재시도 · 취소"},
         {n:"유튜브 링크 · 스튜디오 이동", s:"공개 전환은 스튜디오에서"},
       ]},
-      {n:"승인 대기함", c:[
+      {n:"승인 대기함", p:2, c:[
         {n:"클립 미리보기", s:"승인 판단 근거 · 방송 중 즉시 확인"},
         {n:"승인 / 반려", tag:"S", u:"30"},
         {n:"내 요청 상태", tag:"E", u:"29"},
@@ -370,10 +370,10 @@ const COLS = [
 
 /* ── 개발 단계 — ① 유스케이스가 단일 기준점, 여기선 UC 번호로 물려받는다 ── */
 const PHASES = {
-  1:{nm:"핵심 루프",   tag:"스트리머 혼자 방송 중에 클립을 올린다",
-     ucs:[1,2,3,4,11,12,13,14,18,20,22,25]},
+  1:{nm:"핵심 루프",   tag:"채팅으로 자동 감지한 하이라이트를 스트리머 혼자 방송 중에 올린다",
+     ucs:[1,2,3,4,11,12,13,14,18,20,22,25,27]},
   2:{nm:"협업 · 자산", tag:"편집자를 붙이고 방송이 끝나도 쓴다",
-     ucs:[5,6,7,15,19,21,23,24,26,27,28,29,30]},
+     ucs:[5,6,7,15,19,21,23,24,26,28,29,30]},
   3:{nm:"상용화",      tag:"돈을 받고 모르는 사람이 가입해 쓴다",
      ucs:[8,9,10,16,17,31,32]},
 };
