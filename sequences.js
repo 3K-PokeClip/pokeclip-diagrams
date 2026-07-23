@@ -11,9 +11,9 @@
    여기서 역인덱스를 만든다. 그래서 같은 흐름이 카드마다 복제되지 않는다.
 
    근거가 된 확정 문서 (2026-07-24 기준)
-   · ④ 시스템 아키텍처 v2.7 — 초기 스택에 Kafka 없음. 실시간 집계는 Redis,
-     작업 큐는 SQS+DLQ 다섯 개(vod-finalize · subtitle · preview · render ·
-     upload). Redis 는 Source of Truth 가 아니다.
+   · ④ 시스템 아키텍처 v2.8 — 별도 이벤트 버스 없음. 팬아웃은 Redis Pub/Sub,
+     실시간 집계는 Redis, 작업 큐는 SQS+DLQ 다섯 개(vod-finalize · subtitle ·
+     preview · render · upload). Redis 는 Source of Truth 가 아니다.
    · ③ 서비스 아키텍처 v2.2 — 논리 Capability 21 + 접점·외부 8.
    · ① 유스케이스 v3.9 — UC-01~32.
    · ② IA v3.3 — 표면·글로벌 메뉴·화면.
@@ -50,7 +50,6 @@ var ACTORS = {
   redis:    { name: "Redis",           kind: "store"    },
   s3:       { name: "S3",              kind: "store"    },
   sqs:      { name: "SQS + DLQ",       kind: "queue"    },
-  kafka:    { name: "Kafka (성장기)",   kind: "queue"    },
   /* 외부 */
   plat:     { name: "치지직 / SOOP",    kind: "external" },
   yt:       { name: "YouTube",         kind: "external" },

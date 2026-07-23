@@ -12,7 +12,7 @@
      relatedComponentIds  ④ 실행 단위 · 저장소 · 접점 · 외부 시스템 id
 
    근거 — 확정 문서만 쓴다
-   · ④ v2.7 실행 단위 10 · 저장소 4 · SQS 다섯 큐 · Kafka는 초기 구성에 없음
+   · ④ v2.8 실행 단위 10 · 저장소 4 · SQS 다섯 큐 (별도 이벤트 버스 없음)
    · ③ v2.2 논리 Capability 21 · 데이터 소유권 · 도메인 이벤트
    · ① v3.9 UC-01~32 · ② v3.3 표면 4 · 글로벌 메뉴 6
    · ADR-004(DVR 1h / VOD 60일) 005(CMAF · VOD = 매니페스트 확정)
@@ -625,7 +625,7 @@ S.define({
     { kind:"fragEnd" }
   ],
   notes: [
-    "이 흐름에 Kafka는 없다. 시작 명령은 Core API의 내부 호출이고, 조율은 Redis Lease가 한다.",
+    "이 흐름에 별도 메시지 브로커는 없다. 시작 명령은 Core API의 내부 호출이고, 조율은 Redis Lease가 한다.",
     "SQS는 vod-finalize·자막·미리보기·렌더·업로드 다섯 작업 큐 전용이라 채팅 경로에 등장하지 않는다."
   ]
 },
@@ -935,7 +935,7 @@ S.define({
   ],
   notes: [
     "Redis는 여기서도 Source of Truth가 아니다. 카드의 원본은 PostgreSQL이다.",
-    "지금 구성에 Kafka는 없다. 이벤트 다중 소비·재처리가 필요해지는 성장기의 이야기다 — SEQ-GROW-01."
+    "지금 구성에 별도 이벤트 버스는 없다. 팬아웃은 Redis Pub/Sub, 비동기 작업은 SQS+DLQ가 맡는다."
   ]
 },
 
@@ -1972,46 +1972,6 @@ S.define({
   notes: [
     "삭제된 계정·클립에 대해서도 이력은 남는다. 대상 레코드가 사라져도 '무슨 일이 있었는가'는 답할 수 있어야 한다.",
     "이 흐름은 다른 시퀀스들이 공통으로 지나가는 자리라, 각 시퀀스에서는 'audit_log 기록' 한 줄로만 나타난다."
-  ]
-},
-
-"SEQ-GROW-01": {
-  title: "성장기 이벤트 버스 도입 조건 (Kafka)",
-  trigger: "이벤트 소비자 다종화 · 재처리 요구 · Redis 집계 처리량 한계",
-  purpose: "지금 Kafka가 없는 이유와, 있어야 할 때가 언제인지. " +
-           "도입해도 무엇은 옮기지 않는지를 못 박는다.",
-  relatedUcIds: [],
-  relatedIaNodeIds: [],
-  relatedServiceIds: [],
-  relatedComponentIds: ["kafka", "core", "redis", "sqs", "detect"],
-  participants: P(["core", "redis", "sqs", "kafka", "detect"]),
-  steps: [
-    { kind:"note", at:"core", text:"지금(초기 구성) — 이벤트 팬아웃은 Redis Pub/Sub, 비동기 작업은 SQS+DLQ 다섯 큐. Kafka는 실행 단위 수에 포함되지 않는다." },
-    { kind:"store", from:"core", to:"redis", text:"현재: Outbox Dispatcher → Pub/Sub 팬아웃" },
-    { kind:"store", from:"core", to:"sqs",   text:"현재: 작업 발행 (vod-finalize · subtitle · preview · render · upload)" },
-
-    { kind:"fragStart", type:"alt", label:"도입 조건 (④에 명시된 네 가지)" },
-    { kind:"fragCase", label:"이벤트 소비자가 여러 종류로 늘어난다" },
-    { kind:"self", from:"core", text:"한 사건을 여러 소비자가 각자 속도로 읽어야 한다" },
-    { kind:"fragElse", label:"이벤트 재처리가 필요하다" },
-    { kind:"self", from:"redis", text:"Pub/Sub은 보관하지 않아 놓친 것을 되돌릴 수 없다" },
-    { kind:"fragElse", label:"Redis 집계 처리량이 한계에 닿는다" },
-    { kind:"self", from:"redis", text:"방송 수 증가로 집계 쓰기가 병목이 된다" },
-    { kind:"fragElse", label:"이벤트 보관 · Replay 요구가 생긴다" },
-    { kind:"self", from:"core", text:"과거 이벤트를 다시 흘려 상태를 재구성해야 한다" },
-    { kind:"fragEnd" },
-
-    { kind:"note", at:"kafka", text:"조건을 만족하면 도입한다. 그때도 '이벤트 전용'이다 — 자막·렌더·업로드 작업은 그대로 SQS+DLQ가 소유한다(④)." },
-    { kind:"store", from:"core",  to:"kafka",  text:"성장기: 도메인 이벤트 발행 (보관 · Replay 가능)" },
-    { kind:"sync",  from:"detect",to:"kafka",  text:"성장기: 이벤트 구독 (여러 소비자 중 하나)" },
-    { kind:"store", from:"core",  to:"sqs",    text:"성장기에도 유지: 작업 큐는 SQS+DLQ" },
-    { kind:"note",  at:"sqs", text:"작업 큐를 Kafka로 옮기지 않는 이유 — 작업은 '한 번만 처리되고 실패하면 DLQ로 가는 것'이고, 이벤트는 '여러 번 읽히고 보관되는 것'이다. 성질이 다르다." },
-
-    { kind:"note", at:"redis", text:"Kafka가 들어와도 Redis의 실시간 집계와 세션은 그대로다. 대체가 아니라 추가다." }
-  ],
-  notes: [
-    "다이어그램에서 점선 회색 상자가 성장기 요소다. 단계(P1·P2·P3) 축 밖이라 필터를 걸어도 항상 보인다.",
-    "지금 이 시퀀스는 '아직 하지 않은 결정'을 적어 둔 것이다. 다른 시퀀스에는 Kafka가 등장하지 않는다."
   ]
 }
 

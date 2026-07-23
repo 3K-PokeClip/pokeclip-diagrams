@@ -121,10 +121,10 @@
   <div id="inner">
     <header class="page">
       <h1>System Architecture</h1>
-      <div class="meta">PokeClip · 실행 단위 <b>10</b> = 플러그인 · 웹 · 미디어 서버 · Core API · 채팅 수집기 · 감지기 · 워커 4종 (권한 Gate는 Core 모듈 · VOD 파이널라이즈는 미디어 서버의 작업 모드 — 별도 배포 아님 · Kafka는 성장기라 불포함) · 저장소 <b>4</b> · 외부 <b>4</b> · v2.7 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
-      <b>초기 스택</b> PostgreSQL(+JSONB) · Java 21 Spring Boot/WebFlux · Go+FFmpeg 미디어 · Redis 실시간 집계 · SQS+DLQ 작업 큐 · CMAF/S3 &nbsp;—&nbsp; <b>Kafka는 초기 구성에서 제외</b>, 방송 수·이벤트 소비자가 늘어 재처리·다중 소비가 필요해지는 <b>성장기부터 이벤트 전용</b>으로 도입(작업 큐는 그때도 SQS 유지)<br>
+      <div class="meta">PokeClip · 실행 단위 <b>10</b> = 플러그인 · 웹 · 미디어 서버 · Core API · 채팅 수집기 · 감지기 · 워커 4종 (권한 Gate는 Core 모듈 · VOD 파이널라이즈는 미디어 서버의 작업 모드 — 별도 배포 아님) · 저장소 <b>4</b> · 외부 <b>4</b> · v2.8 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
+      <b>스택</b> PostgreSQL(+JSONB) · Java 21 Spring Boot/WebFlux · Go+FFmpeg 미디어 · Redis 실시간 집계 · SQS+DLQ 작업 큐 · CMAF/S3 &nbsp;—&nbsp; 이벤트 팬아웃은 <b>Redis Pub/Sub</b>, 비동기 작업은 <b>SQS+DLQ</b>가 소유한다(별도 이벤트 버스 없음)<br>
       <b>성능 목표(서버 통제 구간)</b> 채팅 수집 시각 → 카드 표시 <b>p95 2초</b> · 피크 감지 → 카드 표시 <b>p95 1초</b> — "장면 발생 → 카드"는 플랫폼 방송 지연과 시청자 반응 시차가 끼어 서버가 보장할 수 없다<br>
-      빗금 = 저장소 · 점선 회색 = 성장기 도입 · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 · 저장소로 향하는 선은 그 시스템의 프로토콜을 씀(JDBC · Redis · SQS · S3 API) · 선이 <b>묶음 테두리</b>에 닿으면 그 묶음 전체가 관여한다는 뜻 · 상자·칩 클릭으로 관련 연결만<br>
+      빗금 = 저장소 · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 · 저장소로 향하는 선은 그 시스템의 프로토콜을 씀(JDBC · Redis · SQS · S3 API) · 선이 <b>묶음 테두리</b>에 닿으면 그 묶음 전체가 관여한다는 뜻 · 상자·칩 클릭으로 관련 연결만<br>
       모든 카드에 <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">SEQ n</span> 배지가 붙어 있습니다 — 클릭하면 그 카드가 실제로 어떻게 처리되는지 <b>시퀀스 다이어그램</b>을 볼 수 있습니다(키보드는 <b>Enter</b>·<b>Space</b>, 닫기는 <b>Esc</b>)</div>
     </header>
     <div id="wrap">
@@ -218,10 +218,6 @@ const NODES = [
   {id:"s3", b:"data", x:1006, y:760, w:300, h:118, p:1, kind:"store",
    nm:"S3", uc:"객체",
    nt:"CMAF 세그먼트 — 라이브 1시간 롤링 · VOD 60일 · 채팅 아카이브 NDJSON · 완성 클립 보관 · 임시 산출물 1~7일"},
-
-  /* 성장기 */
-  {id:"kafka", x:546, y:944, w:900, h:76, p:"g", growth:true,
-   nm:"Kafka", nt:"Future · 성장기 전용 — 실행 단위 수에 불포함. 도입 조건: 이벤트 소비자 다종화 · 이벤트 재처리 필요 · Redis 집계 처리량 한계 · 이벤트 보관·Replay 요구. 도입해도 이벤트 전용 — 자막·렌더·업로드 작업은 SQS+DLQ가 소유"},
 ];
 
 /* ===== 클라이언트(좌) · 외부(우) ===== */
@@ -370,10 +366,6 @@ const EDGES = [
         pt(1716,464), pt(1716,box("ex-google").cy), P("ex-google","l")]},
   {f:0, l:"구독 결제 (PG API)", both:true, p:[P("core","b",300), pt(886,476),
         pt(1730,476), pt(1730,box("ex-pg").cy), P("ex-pg","l")]},
-
-  /* 성장기 */
-  {f:1, l:"성장기: 이벤트 재처리 · 다중 소비", proto0:true,
-   p:[P("core","b",20), pt(606,900), pt(box("kafka").cx,900), P("kafka","t")]},
 ];
 
 /* ===== 배선 ===== */
@@ -661,7 +653,7 @@ for(const [no,ph] of Object.entries(PHASES)){
   phasesEl.appendChild(b);
 }
 phasesEl.insertAdjacentHTML("beforeend",
-  `<span class="phint">그 단계에 <b>새로 만드는</b> 실행 단위만 남습니다 · 셋 다 켜면 전체 · 점선 회색(Kafka)은 규모가 커지면 도입하는 것이라 단계 축 밖이며 항상 표시됩니다</span>`);
+  `<span class="phint">그 단계에 <b>새로 만드는</b> 실행 단위만 남습니다 · 셋 다 켜면 전체</span>`);
 
 function applyPhase(){
   const on = psel.size > 0;

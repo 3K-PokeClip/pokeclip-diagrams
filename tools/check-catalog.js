@@ -96,14 +96,13 @@ for (const [d, cards] of Object.entries(SETS)) {
   if (ghost.length) bad(`${d} 없는 카드를 가리킴: ${ghost.join(", ")}`);
 }
 
-/* 3. 초기 구성에 Kafka가 새어들지 않았는가 (SEQ-GROW-01만 예외) */
+/* 3. Kafka(별도 이벤트 버스)가 어디에도 새어들지 않았는가 — 초기 구성엔 없다 */
 for (const id of S.all()) {
-  if (id === "SEQ-GROW-01") continue;
   const s = S.get(id);
   const hit = s.participants.some(p => p.id === "kafka") ||
               s.steps.some(st => /kafka/i.test(st.text || "")) ||
-              (s.notes || []).some(t => /kafka(?!는 없다|는 초기)/i.test(t) && !/없다|아니다|않는다|밖/.test(t));
-  if (hit) bad(`${id}: 초기 구성 흐름에 Kafka가 등장한다`);
+              (s.notes || []).some(t => /kafka/i.test(t) && !/없다|아니다|않는다|밖/.test(t));
+  if (hit) bad(`${id}: Kafka가 등장한다 — 별도 이벤트 버스는 쓰지 않는다`);
 }
 
 /* 4. ④의 카드는 실행 단위·저장소와 1:1이다 — 가리킨 카드가 실제로 그 시퀀스에
@@ -112,7 +111,7 @@ const NODE2ACTOR = {
   media:["media"], chat:["chat","chatA","chatB"], detect:["detect"], redis:["redis"],
   core:["core"], gate:["gate"], "w-sub":["wsub"], "w-prev":["wprev"],
   "w-render":["wrender"], "w-upload":["wupload"], pg:["pg"], sqs:["sqs"], s3:["s3"],
-  kafka:["kafka"], plugin:["plugin"], web:["web"], cdn:["cdn"],
+  plugin:["plugin"], web:["web"], cdn:["cdn"],
   "ex-chat":["plat"], "ex-google":["google"], "ex-yt":["yt"], "ex-pg":["pay"]
 };
 for (const id of S.all()) {

@@ -12,7 +12,6 @@
 | ④ 기본 (회귀 확인) | `04-system-architecture.html` |
 | ④ 채팅 수집기 서랍 | `04-system-architecture.html?diagram=system&card=chat` |
 | ④ 렌더 실패·DLQ 시퀀스 | `04-system-architecture.html?diagram=system&card=w-render&sequence=SEQ-EDIT-05` |
-| ④ 성장기 Kafka 도입 조건 | `04-system-architecture.html?diagram=system&card=kafka&sequence=SEQ-GROW-01` |
 | ③ 채팅 수집 블록 서랍 | `03-service-architecture.html?diagram=service&card=rt-chat` |
 | ③ 업로드 2단 검사 | `03-service-architecture.html?diagram=service&card=mk-upload&sequence=SEQ-UP-01` |
 | ① UC-13 서랍 | `01-usecase.html?diagram=usecase&card=UC-13` |
@@ -35,13 +34,13 @@
 
 ```js
 const v = await import('/tools/verify.js');
-await v.verify(21);          // ④는 21, ③은 29, ①②는 32
+await v.verify(20);          // ④는 20, ③은 29, ①②는 32
 
 const r = await import('/tools/regress.js');
 await r.regress('system');   // 'system' | 'service' | 'usecase' | 'ia'
 ```
 
-`verify()` 가 보는 것 — 46개 시퀀스 전체의 글자 겹침·경계 넘침·프래그먼트 이탈,
+`verify()` 가 보는 것 — 45개 시퀀스 전체의 글자 겹침·경계 넘침·프래그먼트 이탈,
 카드별 서랍 열림과 화면 안 위치, 배지 숫자와 목록 수 일치, 시퀀스별 SVG 렌더와
 URL 반영, 목록 복귀, 포커스 복귀, `aria-*` 갱신, 키보드 Enter·Tab 트랩·Esc 2단,
 44px 최소 클릭 크기, 확대·이동 상태 보존.
