@@ -97,6 +97,10 @@
   .leaf>.n{border-color:#8f96a0;border-width:1px}
   .leaf>.n .nm{font-weight:400;font-size:11px}
 
+  /* 칩 바 — 헤더가 아니라 정보구조 아래에 고정된 바 */
+  #ctlbar{margin-top:10px;padding:10px 14px 12px;background:var(--bg);
+          border-top:1.5px solid #d3d7dd;display:flex;flex-direction:column;gap:7px;
+          align-items:flex-start;max-width:1650px;margin-left:auto;margin-right:auto;width:100%}
   footer.notes{margin-top:8px;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;max-width:1650px;margin-left:auto;margin-right:auto}
   .notebox{border:1px solid #d3d7dd;background:#fff;padding:8px 13px}
   .notebox h4{font-size:10.5px;letter-spacing:.05em;margin-bottom:4px;font-weight:800}
@@ -112,8 +116,7 @@
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · 표면 <b>4개</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔 — 접근 주체·인증·실행 환경으로 분리) · 노드 <b>170</b> · v3.1 · P1 전용 뷰 <b>?p=1</b> · 2026-07-23 — 웹 앱 진입: 구글 로그인 → 글로벌 메뉴 6개 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
-  <div class="phases" id="phases"></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · 표면 <b>4개</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔 — 접근 주체·인증·실행 환경으로 분리) · 노드 <b>170</b> · v3.2 · P1 전용 뷰 <b>?p=1</b> · 2026-07-23 — 웹 앱 진입: 구글 로그인 → 글로벌 메뉴 6개 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
 </header>
 
 <div id="chart">
@@ -132,6 +135,8 @@
     <div id="cols"></div>
   </div>
 </div>
+
+<div id="ctlbar"><div class="phases" id="phases"></div></div>
 
 <footer class="notes">
   <div class="notebox">
@@ -489,7 +494,9 @@ function applyView(){
   document.getElementById("zoomPct").textContent = Math.round(vs*100)+"%";
 }
 function sizeChart(){
-  chart.style.height = Math.max(320, window.innerHeight - chart.offsetTop - 12)+"px";
+  const bar = document.getElementById("ctlbar");
+  const barH = bar ? bar.offsetHeight + 10 : 0;   /* 아래 칩 바까지가 한 화면 */
+  chart.style.height = Math.max(320, window.innerHeight - chart.offsetTop - barH - 12)+"px";
 }
 function fit(){
   sizeChart();

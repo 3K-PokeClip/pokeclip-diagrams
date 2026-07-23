@@ -13,15 +13,16 @@
   html,body{height:100%}
   body{background:var(--bg);color:var(--ink);overflow:hidden;
        font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
-       font-size:13px;line-height:1.4}
+       font-size:13px;line-height:1.4;
+       display:flex;flex-direction:column}
 
-  #stage{position:fixed;inset:0;overflow:hidden;cursor:grab;user-select:none;
+  #stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;cursor:grab;user-select:none;
          background-color:var(--bg);
          background-image:radial-gradient(#dde2ea 1px, transparent 1px);background-size:22px 22px}
   #stage.grabbing{cursor:grabbing}
   #inner{position:absolute;left:0;top:0;width:max-content;transform-origin:0 0;padding:14px 18px 18px}
 
-  #hud{position:fixed;right:12px;bottom:12px;z-index:6;display:flex;gap:6px;align-items:center;
+  #hud{position:absolute;right:12px;bottom:12px;z-index:6;display:flex;gap:6px;align-items:center;
        background:#fff;border:1px solid #d3d7dd;border-radius:6px;padding:4px 6px;
        box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:11px;color:#3a3f47}
   #hud button{font:inherit;border:1px solid #d3d7dd;background:#fff;border-radius:4px;
@@ -35,10 +36,10 @@
      letter-spacing:.01em;padding:4px 15px 5px}
   .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
   .meta b{color:var(--ink)}
-  #ctlbar{position:absolute;top:12px;left:18px;z-index:5;display:flex;flex-direction:column;
-          gap:7px;align-items:flex-start;background:rgba(251,251,252,.93);border:1px solid #d3d7dd;
-          border-radius:8px;padding:9px 11px;box-shadow:0 2px 6px rgba(0,0,0,.09);
-          max-width:calc(100vw - 40px)}
+  /* 칩 바 — 캔버스 위에 떠 있지 않고 아키텍처 아래에 고정된 바 */
+  #ctlbar{flex:0 0 auto;z-index:5;display:flex;flex-direction:column;
+          gap:7px;align-items:flex-start;background:var(--bg);
+          border-top:1.5px solid #d3d7dd;padding:10px 18px 12px}
   .flows{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .phases{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .pchip{border:1.4px solid var(--ink);background:#fff;border-radius:6px;padding:7px 14px 7px 9px;
@@ -117,11 +118,10 @@
 <body>
 
 <div id="stage">
-  <div id="ctlbar"><div class="flows" id="flows"></div><div class="phases" id="phases"></div></div>
   <div id="inner">
     <header class="page">
       <h1>System Architecture</h1>
-      <div class="meta">PokeClip · 실행 단위 <b>10</b> = 플러그인 · 웹 · 미디어 서버 · Core API · 채팅 수집기 · 감지기 · 워커 4종 (권한 Gate는 Core 모듈 · VOD 파이널라이즈는 미디어 서버의 작업 모드 — 별도 배포 아님 · Kafka는 성장기라 불포함) · 저장소 <b>4</b> · 외부 <b>4</b> · v2.2 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
+      <div class="meta">PokeClip · 실행 단위 <b>10</b> = 플러그인 · 웹 · 미디어 서버 · Core API · 채팅 수집기 · 감지기 · 워커 4종 (권한 Gate는 Core 모듈 · VOD 파이널라이즈는 미디어 서버의 작업 모드 — 별도 배포 아님 · Kafka는 성장기라 불포함) · 저장소 <b>4</b> · 외부 <b>4</b> · v2.3 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
       <b>초기 스택</b> PostgreSQL(+JSONB) · Java 21 Spring Boot/WebFlux · Go+FFmpeg 미디어 · Redis 실시간 집계 · SQS+DLQ 작업 큐 · CMAF/S3 &nbsp;—&nbsp; <b>Kafka는 초기 구성에서 제외</b>, 방송 수·이벤트 소비자가 늘어 재처리·다중 소비가 필요해지는 <b>성장기부터 이벤트 전용</b>으로 도입(작업 큐는 그때도 SQS 유지)<br>
       <b>성능 목표(서버 통제 구간)</b> 채팅 수집 시각 → 카드 표시 <b>p95 2초</b> · 피크 감지 → 카드 표시 <b>p95 1초</b> — "장면 발생 → 카드"는 플랫폼 방송 지연과 시청자 반응 시차가 끼어 서버가 보장할 수 없다<br>
       빗금 = 저장소 · 점선 회색 = 성장기 도입 · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 · 저장소로 향하는 선은 그 시스템의 프로토콜을 씀(JDBC · Redis · SQS · S3 API) · 선이 <b>묶음 테두리</b>에 닿으면 그 묶음 전체가 관여한다는 뜻 · 상자·칩 클릭으로 관련 연결만</div>
@@ -131,15 +131,16 @@
       <svg id="labels"></svg>
     </div>
   </div>
+  <div id="hud">
+    <button type="button" id="btnFit">맞춤</button>
+    <button type="button" id="btnOut">−</button>
+    <span class="pct" id="zoomPct">100%</span>
+    <button type="button" id="btnIn">＋</button>
+    <span class="tip">드래그 이동 · 휠 스크롤 · Ctrl+휠 확대</span>
+  </div>
 </div>
 
-<div id="hud">
-  <button type="button" id="btnFit">맞춤</button>
-  <button type="button" id="btnOut">−</button>
-  <span class="pct" id="zoomPct">100%</span>
-  <button type="button" id="btnIn">＋</button>
-  <span class="tip">드래그 이동 · 휠 스크롤 · Ctrl+휠 확대</span>
-</div>
+<div id="ctlbar"><div class="flows" id="flows"></div><div class="phases" id="phases"></div></div>
 
 <script>
 /* ===== 좌표 ===== */
@@ -322,19 +323,20 @@ const EDGES = [
   {f:0, l:"채팅 수집 (공식 API · WS)", both:true, p:[P("chat","t"), pt(box("chat").cx,48),
         pt(1736,48), pt(1736,box("ex-chat").cy), P("ex-chat","l")]},
   {f:1, l:"채팅 집계 (윈도우)", p:[P("chat","b",60), pt(836,214), pt(1536,214), P("redis","b")]},
-  {f:1, l:"집계 읽기 · 감지 상태", both:true, p:[P("detect","r"), P("redis","l")]},
+  {f:1, l:"집계 읽기", both:true, p:[P("detect","r"), P("redis","l")]},
   {f:1, l:"카드 후보 (멱등키)", p:[P("detect","b",-100), pt(1056,238), pt(880,238), pt(880,box("core").t)]},
 
   /* 정합성 · 팬아웃 */
   {f:3, l:"카드 + Outbox 한 트랜잭션 (JDBC)", p:[P("core","b",-320), pt(266,440), pt(226,440),
         pt(226,730), pt(box("pg").cx,730), P("pg","t")]},
   {f:1, l:"Outbox Dispatcher → Pub/Sub 팬아웃 · 세션·캐시", both:true, p:[P("core","r",-45),
-        pt(986,box("core").cy-45), pt(986,250), pt(1636,250), P("redis","b",100)]},
+        pt(1006,box("core").cy-45), pt(1006,258), pt(1636,258), P("redis","b",100)]},
 
   /* 제작 */
-  {f:2, l:"작업 발행 (jobId 멱등 · vod-finalize 포함)", p:[P("core","b",0), pt(586,730), pt(box("sqs").cx,730), P("sqs","t")]},
-  {f:2, l:"vod-finalize-jobs", to:"media", p:[P("sqs","r",-20), pt(966,box("sqs").cy-20),
-        pt(966,244), pt(box("media").cx,244), P("media","b")]},
+  {f:2, l:"작업 발행 (jobId 멱등 · vod-finalize 포함)", p:[P("core","b",0), pt(586,730),
+        pt(box("sqs").cx-45,730), P("sqs","t",-45)]},
+  {f:2, l:"vod-finalize-jobs", to:"media", p:[P("sqs","r",-20), pt(986,box("sqs").cy-20),
+        pt(986,232), pt(box("media").cx,232), P("media","b")]},
   {f:3, l:"방송 상태 (finalize 입력)", to:"pg", p:[P("media","b",-130), pt(266,244), pt(216,244),
         pt(216,744), pt(box("pg").cx-40,744), P("pg","t",-40)]},
   {f:2, l:"subtitle-jobs", p:[P("sqs","t",-70), pt(706,696), pt(box("w-sub").cx,696), P("w-sub","b")]},
@@ -420,6 +422,18 @@ const rectOf = t => { const b = t.getBBox(); return {l:b.x, t:b.y, r:b.x+b.width
 const clash = (a, b, pad=2) =>
   Math.min(a.r,b.r+pad)-Math.max(a.l,b.l-pad) > 0 && Math.min(a.b,b.b+pad)-Math.max(a.t,b.t-pad) > 0;
 
+/* 이미 그린 배선을 장애물로 등록 — 라벨이 남의 선 위에 앉으면 글씨가 선에 걸려 안 읽힌다 */
+const wireSegs = [];
+EDGES.forEach((e,i)=>{ for(let k=1;k<e.p.length;k++) wireSegs.push({idx:i, a:e.p[k-1], b:e.p[k]}); });
+const segHitsRect = (s, r, pad=1.5) => {
+  const lo=(u,v)=>Math.min(u,v), hi=(u,v)=>Math.max(u,v);
+  if(s.a.y===s.b.y) return s.a.y>=r.t-pad && s.a.y<=r.b+pad &&
+                           hi(s.a.x,s.b.x)>=r.l-pad && lo(s.a.x,s.b.x)<=r.r+pad;
+  if(s.a.x===s.b.x) return s.a.x>=r.l-pad && s.a.x<=r.r+pad &&
+                           hi(s.a.y,s.b.y)>=r.t-pad && lo(s.a.y,s.b.y)<=r.b+pad;
+  return false;
+};
+
 const placed = [];
 const blocks = nodeBoxes();
 for(const {edge, idx} of labelQueue){
@@ -436,28 +450,44 @@ for(const {edge, idx} of labelQueue){
     segs.push({a, b, len:Math.abs(b.x-a.x)+Math.abs(b.y-a.y), horiz:a.y===b.y});
   }
   segs.sort((p,q)=>q.len-p.len);
+  /* 자기 선 옆으로 비켜 앉는다 — 가로 구간은 위/아래, 세로 구간은 좌/우 */
   const cands = [];
   for(const s of segs){
-    for(const f of [.5,.35,.65,.22,.78]){
+    for(const f of [.5,.38,.62,.26,.74,.14,.86]){
       const x = s.a.x + (s.b.x-s.a.x)*f, y = s.a.y + (s.b.y-s.a.y)*f;
-      if(s.horiz) cands.push({x, y:y-4});
-      else { cands.push({x:x+3, y}); cands.push({x:x-3, y}); }
+      if(s.horiz){ cands.push({x, y:y-6}); cands.push({x, y:y+11}); }
+      else { cands.push({x:x+9, y}); cands.push({x:x-9, y}); }
     }
   }
-  const free = (c, pad=2) => {
+  /* 남의 배선까지 피한다(pad로 여유 조절) */
+  const free = (c, pad=2, wirePad=1.5) => {
     t.setAttribute("x", c.x); t.setAttribute("y", c.y);
     const r = rectOf(t);
-    return !blocks.some(bx=>clash(r,bx,pad)) && !placed.some(pr=>clash(r,pr,pad));
+    if(blocks.some(bx=>clash(r,bx,pad))) return false;
+    if(placed.some(pr=>clash(r,pr,pad))) return false;
+    if(wirePad !== null && wireSegs.some(s=>s.idx!==idx && segHitsRect(s,r,wirePad))) return false;
+    return true;
   };
   let chosen = cands[0], clean = false;
   for(const c of cands){ if(free(c)){ chosen = c; clean = true; break; } }
   if(!clean){
     const base = cands[0];
     outer:
-    for(const dy of [3,-3,4,-4,6,-6,10,-10,16,-16,24,-24,32,-32,56,-56,72,-72]){
-      for(const dx of [0,-70,70,-140,140,-180,180,-240,240]){
+    for(const dy of [6,-6,11,-11,16,-16,22,-22,30,-30,40,-40,56,-56,72,-72]){
+      for(const dx of [0,-60,60,-120,120,-180,180,-240,240,-300,300]){
         const c = {x:base.x+dx, y:base.y+dy};
-        if(free(c, 0)){ chosen = c; clean = true; break outer; }
+        if(free(c, 1)){ chosen = c; clean = true; break outer; }
+      }
+    }
+  }
+  /* 그래도 안 되면 배선 회피만 포기 — 블록·라벨 겹침은 끝까지 막는다 */
+  if(!clean){
+    const base = cands[0];
+    outer2:
+    for(const dy of [0,6,-6,12,-12,20,-20,30,-30,44,-44]){
+      for(const dx of [0,-70,70,-150,150,-220,220]){
+        const c = {x:base.x+dx, y:base.y+dy};
+        if(free(c, 0, null)){ chosen = c; clean = true; break outer2; }
       }
     }
   }

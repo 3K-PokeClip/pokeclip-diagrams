@@ -13,15 +13,16 @@
   html,body{height:100%}
   body{background:var(--bg);color:var(--ink);overflow:hidden;
        font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
-       font-size:13px;line-height:1.4}
+       font-size:13px;line-height:1.4;
+       display:flex;flex-direction:column}
 
-  #stage{position:fixed;inset:0;overflow:hidden;cursor:grab;user-select:none;
+  #stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;cursor:grab;user-select:none;
          background-color:var(--bg);
          background-image:radial-gradient(#dde2ea 1px, transparent 1px);background-size:22px 22px}
   #stage.grabbing{cursor:grabbing}
   #inner{position:absolute;left:0;top:0;width:max-content;transform-origin:0 0;padding:14px 18px 18px}
 
-  #hud{position:fixed;right:12px;bottom:12px;z-index:6;display:flex;gap:6px;align-items:center;
+  #hud{position:absolute;right:12px;bottom:12px;z-index:6;display:flex;gap:6px;align-items:center;
        background:#fff;border:1px solid #d3d7dd;border-radius:6px;padding:4px 6px;
        box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:11px;color:#3a3f47}
   #hud button{font:inherit;border:1px solid #d3d7dd;background:#fff;border-radius:4px;
@@ -36,10 +37,10 @@
   .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
   .meta b{color:var(--ink)}
   .flows{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-  #ctlbar{position:absolute;top:12px;left:18px;z-index:5;display:flex;flex-direction:column;
-          gap:7px;align-items:flex-start;background:rgba(251,251,252,.93);border:1px solid #d3d7dd;
-          border-radius:8px;padding:9px 11px;box-shadow:0 2px 6px rgba(0,0,0,.09);
-          max-width:calc(100vw - 40px)}
+  /* 칩 바 — 캔버스 위에 떠 있지 않고 아키텍처 아래에 고정된 바 */
+  #ctlbar{flex:0 0 auto;z-index:5;display:flex;flex-direction:column;
+          gap:7px;align-items:flex-start;background:var(--bg);
+          border-top:1.5px solid #d3d7dd;padding:10px 18px 12px}
   .flows{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .phases{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .pchip{border:1.4px solid var(--ink);background:#fff;border-radius:6px;padding:7px 14px 7px 9px;
@@ -116,11 +117,10 @@
 <body>
 
 <div id="stage">
-  <div id="ctlbar"><div class="flows" id="flows"></div><div class="phases" id="phases"></div></div>
   <div id="inner">
     <header class="page">
       <h1>Service Architecture</h1>
-      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.7 · P1 전용 뷰 <b>?p=1</b> — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · <b>각 블록은 논리적 비즈니스 기능(Capability)이며 독립 배포 단위가 아님</b> — 실행 단위 매핑은 ④ 시스템 아키텍처<br>
+      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.8 · P1 전용 뷰 <b>?p=1</b> — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · <b>각 블록은 논리적 비즈니스 기능(Capability)이며 독립 배포 단위가 아님</b> — 실행 단위 매핑은 ④ 시스템 아키텍처<br>
       선이 <b>묶음 테두리</b>에 닿으면 그 묶음에 <b>관여</b>한다는 뜻이고(웹 앱처럼 범위가 넓을 때), <b>블록</b>에 닿으면 그 블록과 <b>직접</b> 주고받는다는 뜻입니다 · 빗금 배경 = 저장소 · 검은 배지 = 그 블록이 <b>소유(최종 책임)하는 데이터</b> — 같은 데이터를 다른 블록이 고치지 않는다 · 블록·흐름 칩을 클릭하면 관련 요소만 남습니다</div>
     </header>
     <div id="wrap">
@@ -128,15 +128,16 @@
       <svg id="labels"></svg>
     </div>
   </div>
+  <div id="hud">
+    <button type="button" id="btnFit">맞춤</button>
+    <button type="button" id="btnOut">−</button>
+    <span class="pct" id="zoomPct">100%</span>
+    <button type="button" id="btnIn">＋</button>
+    <span class="tip">드래그 이동 · 휠 스크롤 · Ctrl+휠 확대</span>
+  </div>
 </div>
 
-<div id="hud">
-  <button type="button" id="btnFit">맞춤</button>
-  <button type="button" id="btnOut">−</button>
-  <span class="pct" id="zoomPct">100%</span>
-  <button type="button" id="btnIn">＋</button>
-  <span class="tip">드래그 이동 · 휠 스크롤 · Ctrl+휠 확대</span>
-</div>
+<div id="ctlbar"><div class="flows" id="flows"></div><div class="phases" id="phases"></div></div>
 
 <script>
 /* ===== 좌표 체계 ===== */
@@ -466,6 +467,18 @@ const rectOf = t => { const b = t.getBBox(); return {l:b.x, t:b.y, r:b.x+b.width
 const clash = (a, b, pad=2) =>
   Math.min(a.r,b.r+pad)-Math.max(a.l,b.l-pad) > 0 && Math.min(a.b,b.b+pad)-Math.max(a.t,b.t-pad) > 0;
 
+/* 이미 그린 배선을 장애물로 등록 — 라벨이 남의 선 위에 앉으면 글씨가 선에 걸려 안 읽힌다 */
+const wireSegs = [];
+EDGES.forEach((e,i)=>{ for(let k=1;k<e.p.length;k++) wireSegs.push({idx:i, a:e.p[k-1], b:e.p[k]}); });
+const segHitsRect = (s, r, pad=1.5) => {
+  const lo=(u,v)=>Math.min(u,v), hi=(u,v)=>Math.max(u,v);
+  if(s.a.y===s.b.y) return s.a.y>=r.t-pad && s.a.y<=r.b+pad &&
+                           hi(s.a.x,s.b.x)>=r.l-pad && lo(s.a.x,s.b.x)<=r.r+pad;
+  if(s.a.x===s.b.x) return s.a.x>=r.l-pad && s.a.x<=r.r+pad &&
+                           hi(s.a.y,s.b.y)>=r.t-pad && lo(s.a.y,s.b.y)<=r.b+pad;
+  return false;
+};
+
 const placed = [];
 const blocks = nodeBoxes();
 for(const {edge, idx} of labelQueue){
@@ -483,33 +496,47 @@ for(const {edge, idx} of labelQueue){
     segs.push({a, b, len:Math.abs(b.x-a.x)+Math.abs(b.y-a.y), horiz:a.y===b.y});
   }
   segs.sort((p,q)=>q.len-p.len);
+  /* 자기 선 옆으로 비켜 앉는다 — 가로 구간은 위/아래, 세로 구간은 좌/우 */
   const cands = [];
   for(const s of segs){
-    for(const f of [.5,.35,.65,.22,.78]){
+    for(const f of [.5,.38,.62,.26,.74,.14,.86]){
       const x = s.a.x + (s.b.x-s.a.x)*f, y = s.a.y + (s.b.y-s.a.y)*f;
-      if(s.horiz) cands.push({x, y:y-4});
-      else { cands.push({x:x+3, y}); cands.push({x:x-3, y}); }
+      if(s.horiz){ cands.push({x, y:y-6}); cands.push({x, y:y+11}); }
+      else { cands.push({x:x+9, y}); cands.push({x:x-9, y}); }
     }
   }
 
-  const free = (c, pad=2) => {
+  /* 남의 배선까지 피한다 */
+  const free = (c, pad=2, wirePad=1.5) => {
     t.setAttribute("x", c.x); t.setAttribute("y", c.y);
     const r = rectOf(t);
-    return !blocks.some(bx=>clash(r,bx,pad)) && !placed.some(pr=>clash(r,pr,pad));
+    if(blocks.some(bx=>clash(r,bx,pad))) return false;
+    if(placed.some(pr=>clash(r,pr,pad))) return false;
+    if(wirePad !== null && wireSegs.some(s=>s.idx!==idx && segHitsRect(s,r,wirePad))) return false;
+    return true;
   };
 
   let chosen = cands[0], clean = false;
   for(const c of cands){ if(free(c)){ chosen = c; clean = true; break; } }
 
-  /* 위아래로 붙은 블록 사이 16px 틈에 놓인 짧은 선은 위 후보로 못 앉는다.
-     틈 한가운데를 노리도록 잘게 밀어보고, 그래도 안 되면 옆으로 옮긴다. */
   if(!clean){
     const base = cands[0];
     outer:
-    for(const dy of [3,-3,4,-4,6,-6,10,-10,16,-16,24,-24,32,-32,56,-56,72,-72]){
-      for(const dx of [0,-70,70,-140,140,-180,180]){
+    for(const dy of [6,-6,11,-11,16,-16,22,-22,30,-30,40,-40,56,-56,72,-72]){
+      for(const dx of [0,-60,60,-120,120,-180,180,-240,240,-300,300]){
         const c = {x:base.x+dx, y:base.y+dy};
-        if(free(c, 0)){ chosen = c; clean = true; break outer; }
+        if(free(c, 1)){ chosen = c; clean = true; break outer; }
+      }
+    }
+  }
+  /* 그래도 안 되면 배선 회피만 포기 — 블록·라벨 겹침은 끝까지 막는다 */
+  if(!clean){
+    const base = cands[0];
+    outer2:
+    for(const dy of [0,6,-6,12,-12,20,-20,30,-30,44,-44]){
+      for(const dx of [0,-70,70,-150,150,-220,220]){
+        const c = {x:base.x+dx, y:base.y+dy};
+        if(free(c, 0, null)){ chosen = c; clean = true; break outer2; }
       }
     }
   }
