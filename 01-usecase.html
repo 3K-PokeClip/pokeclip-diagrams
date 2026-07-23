@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokeClip — ① 유스케이스 다이어그램</title>
+<style>
+  :root{
+    --bg:#fbfbfc; --ink:#16181c; --sub:#5c626c; --faint:#9aa1ab;
+    --box-line:#16181c; --group-line:#7b828c;
+    --mono:Consolas,"Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    font-size:13px; line-height:1.4; padding:12px 18px 16px; min-width:1760px;
+  }
+  header.page{max-width:1880px;margin:0 auto 12px}
+  h1{display:inline-block;background:var(--ink);color:#fff;font-size:20px;font-weight:800;
+     letter-spacing:.01em;padding:4px 15px 5px}
+  .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
+  .meta b{color:var(--ink)}
+
+  #wrap{position:relative;max-width:1880px;margin:0 auto;display:flex;gap:26px;align-items:stretch;
+        min-height:calc(100vh - 104px)}
+  #wires{position:absolute;inset:0;pointer-events:none;z-index:1}
+  #wires path,#wires circle{transition:opacity .18s ease, stroke-width .18s ease}
+  #wrap.focus #wires path,#wrap.focus #wires circle{opacity:.05}
+  #wrap.focus #wires path.on{opacity:.95;stroke-width:1.9}
+  #wrap.focus #wires circle.on{opacity:.95}
+
+  aside{position:relative;flex:0 0 148px;z-index:2}
+  .actor{position:absolute;left:0;right:0;text-align:center;cursor:default;
+         transition:opacity .18s ease}
+  .actor .fig{margin-bottom:4px}
+  .actor .aname{font-weight:800;font-size:14px}
+  .actor .stereo{font-family:var(--mono);font-size:9.5px;color:var(--sub);letter-spacing:.03em;margin-top:1px}
+  .actor .adesc{font-size:10.5px;color:var(--sub);line-height:1.35;margin-top:3px}
+  #wrap.focus .actor{opacity:.25}
+  #wrap.focus .actor.lit{opacity:1}
+
+  #boundary{flex:1;z-index:2;position:relative;border:1.5px dashed var(--faint);
+            border-radius:4px;padding:26px 16px 16px;min-width:0;background:transparent;
+            display:flex;flex-direction:column}
+  #boundary>h2{position:absolute;top:-10px;left:22px;background:var(--bg);
+               border:1px solid var(--ink);padding:2px 12px;font-size:11.5px;font-weight:700;
+               letter-spacing:.05em}
+  .zones{flex:1;display:grid;grid-template-columns:1fr 1fr 1.9fr .9fr;gap:16px 16px;align-items:stretch}
+  .zone[data-key="edit"] .items{grid-template-columns:1fr 1fr}
+  .uc.wide{grid-column:1/-1}
+  .zcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .zone{position:relative;border:1.3px dashed var(--group-line);border-radius:4px;
+        padding:15px 9px 9px;background:transparent;display:flex;flex-direction:column}
+  .zone>h3{position:absolute;top:-9px;left:12px;background:var(--bg);
+           border:1px solid var(--ink);padding:1px 9px;font-size:10.5px;font-weight:700;
+           letter-spacing:.03em;display:flex;gap:6px;align-items:center}
+  .zone>h3 .cnt{font-family:var(--mono);font-weight:400;font-size:9px;color:var(--sub)}
+  .zone>h3 .autotag{font-family:var(--mono);font-size:8.5px;color:var(--sub);font-weight:400}
+  .items{flex:1;display:grid;grid-template-columns:1fr;grid-auto-rows:1fr;gap:7px;align-items:center}
+  .uc{position:relative;background:#fff;border:1.2px solid var(--box-line);border-radius:6px;
+      padding:6px 9px 5px;text-align:center;min-height:46px;max-height:150px;height:100%;
+      display:flex;flex-direction:column;justify-content:center;gap:1px;
+      transition:opacity .18s ease, box-shadow .18s ease}
+  .uc .name{font-weight:700;font-size:12.5px;line-height:1.2}
+  .uc .note{font-size:9.5px;color:var(--sub);line-height:1.25}
+  .uc .badges{display:flex;gap:5px;justify-content:center;margin-top:2px;flex-wrap:wrap}
+  .uc .ucid{font-family:var(--mono);font-size:9px;border:1px solid var(--ink);
+            padding:0 6px;letter-spacing:.04em}
+  .uc .perm,.uc .auto{font-family:var(--mono);font-size:9px;border:1px solid var(--faint);
+            color:var(--sub);padding:0 6px}
+  .uc .who{font-size:9px;border:1px solid #c6ccd4;background:#f3f5f8;
+            color:#3a3f47;padding:0 6px}
+  #wrap.focus .uc{opacity:.25}
+  #wrap.focus .uc.lit{opacity:1;box-shadow:0 0 0 1.6px var(--ink)}
+  .subs{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px}
+  .subs span{font-size:9.5px;border:1px solid #d3d7dd;background:#fff;
+             padding:1px 6px;color:var(--sub)}
+
+  footer.notes{max-width:1880px;margin:28px auto 0;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px}
+  .notebox{border:1px solid #d3d7dd;background:#fff;padding:8px 13px}
+  .notebox h4{font-size:10.5px;letter-spacing:.05em;margin-bottom:4px;font-weight:800}
+  .notebox li{margin-left:16px;font-size:11px;margin-bottom:2px;color:#3a3f47}
+  .notebox .tbd{font-family:var(--mono);font-size:9px;border:1px solid var(--ink);
+                padding:0 4px;margin-left:4px}
+  .lg{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#3a3f47;margin-bottom:5px}
+  .lg .sline{display:inline-block;width:34px;height:0;border-top:1.4px solid var(--ink)}
+  .lg .dbox{display:inline-block;width:30px;height:14px;border:1.2px dashed var(--group-line);border-radius:3px}
+  .lg .ubox{display:inline-block;width:30px;height:14px;border:1.2px solid var(--ink);border-radius:3px;background:#fff}
+
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>Use Case Diagram</h1>
+  <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.1 · 2026-07-23 (Codex 최종 검증 결함 0건) — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 마우스를 올리면 관련 선만 강조</div>
+</header>
+
+<div id="wrap">
+  <svg id="wires"></svg>
+  <aside id="side-left"></aside>
+  <section id="boundary">
+    <h2>PokeClip 시스템</h2>
+    <div class="zones" id="zones"></div>
+  </section>
+  <aside id="side-right"></aside>
+</div>
+
+<footer class="notes">
+  <div class="notebox">
+    <h4>범례</h4>
+    <div class="lg"><span class="sline"></span> 액터 ↔ 역할 그룹 관여 (실선 · 방향 없음)</div>
+    <div class="lg"><span class="ubox"></span> 유스케이스 — [UC-번호] · 회색 배지 = 이 유스케이스의 참여 액터</div>
+    <div class="lg"><span class="dbox"></span> 역할 그룹 · 바깥 점선 = 시스템 경계</div>
+  </div>
+  <div class="notebox">
+    <h4>확정 사항</h4>
+    <ul>
+      <li>시스템 경계: <b>OBS 플러그인을 포함한 전체 제품</b> — 플러그인은 내부 구성요소</li>
+      <li>과금 주체: <b>스트리머 단독</b>(편집자 무료) · 편집자 접근: <b>신청형</b></li>
+      <li>클립 편집 하위 9기능은 UC-22 안에 표기 · 자동 기능(UC-13~17)은 시스템이 실행, 배지는 수혜자/데이터 제공자</li>
+      <li>include/extend 미사용 — 권한 부족 시 UC-25·26 → UC-29 분기는 비고로 명시</li>
+      <li>범위 외: 운영자(Admin) — ② IA에 위치만 표시, 유스케이스 상세는 별도 설계 · 목록 조회 화면(② IA) · 공개 전환 · 업로드 자동 재시도 알고리즘(④)</li>
+    </ul>
+  </div>
+  <div class="notebox">
+    <h4>미정 (TBD)</h4>
+    <ul>
+      <li>종량 과금 기준(방송 시간·렌더·STT 분량 등)<span class="tbd">TBD</span></li>
+      <li>스트리머 → 편집자 초대형 접근<span class="tbd">TBD</span></li>
+      <li>계정 삭제 시 클립·편집본·VOD 처리<span class="tbd">TBD</span></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+const ACTORS = {
+  S:{name:"스트리머", stereo:"Streamer", desc:"방송 소유자 · 모든 권한", side:"left",  human:true},
+  E:{name:"편집자",   stereo:"Editor",   desc:"승인받은 협업자 · 권한 단계형", side:"left",  human:true},
+  G:{name:"Google",   stereo:"«external system»", desc:"OAuth 로그인", side:"right", human:false},
+  C:{name:"치지직 / SOOP", stereo:"«external system»", desc:"방송 플랫폼 · 채팅 소스", side:"right", human:false},
+  Y:{name:"YouTube",  stereo:"«external system»", desc:"클립 업로드 · CC 등록", side:"right", human:false},
+  P:{name:"결제 시스템", stereo:"«external · PG»", desc:"구독 결제 · 종량 과금", side:"right", human:false},
+};
+
+const GROUPS = {
+  acc:{title:"계정 · 연동", items:[
+    {id:1,  name:"구글 로그인", note:"최초 1회 약관 동의 포함", actors:["S","E","G"]},
+    {id:2,  name:"방송 채널 연동 관리", note:"치지직/SOOP · 연동+해제", actors:["S","C"]},
+    {id:3,  name:"유튜브 채널 연동 관리", note:"연동+해제 · 업로드 대상 채널 선택 · 만료 재인증", actors:["S","Y"]},
+    {id:4,  name:"OBS 플러그인 설치·연결 관리", note:"다운로드 · 키(Stream Key) 등록 · 오디오 트랙 매핑 · 연결/송출 테스트·상태 확인", actors:["S"]},
+    {id:5,  name:"스트리머 접근 요청", note:"신청형 — 스트리머 검색 → 요청 → 승인 대기", actors:["E"]},
+    {id:6,  name:"협업 종료", note:"편집자 측 종료 · 즉시 해당 스트리머 자산 접근 불가", actors:["E"]},
+    {id:7,  name:"편집자 승인·권한 관리", note:"승인/반려 · 권한 단계 설정 · 회수(즉시 전면 차단)", actors:["S"]},
+    {id:8,  name:"알림 설정 관리", note:"알림 종류별 on/off · 수신 채널 TBD", actors:["S","E"]},
+    {id:9,  name:"계정 삭제", note:"활성 구독 해지 선행 · 데이터·소유권 처리 · 보관물 정책 TBD", actors:["S","E"]},
+    {id:10, name:"문의·지원 요청", note:"가입 전·후 공통 · 접수 상태·답변 확인", actors:["S","E"]},
+  ]},
+  live:{title:"방송 · 하이라이트", items:[
+    {id:11, name:"PokeClip 동시 송출 시작·종료", note:"OBS 플러그인 경유 · 영상 1 + 오디오 최대 10트랙 — 시스템은 수신·트랙 분리 저장(되감기 1시간 버퍼)", actors:["S"]},
+    {id:12, name:"핫키 수동 하이라이트 표시", note:"방송 중 전역 핫키 → 앞뒤 구간이 수동 하이라이트로 승격 · 대시보드 카드 표시", actors:["S"]},
+  ]},
+  auto:{title:"시스템 자동", auto:true, items:[
+    {id:13, name:"채팅 자동 수집", note:"방송 시작과 함께 · 플랫폼은 데이터 제공자", actors:["C"], auto:true},
+    {id:14, name:"자동 하이라이트 생성", note:"채팅 피크 감지 · 목표 3초 이내", actors:["S","E"], auto:true},
+    {id:15, name:"방송 종료 시 VOD 전환·보관", note:"60일 · 만료 카드 챕터 재활성화", actors:["S","E"], auto:true},
+    {id:16, name:"서비스 이벤트 알림 발송", note:"방송 시작 · 승인 요청/결과 · 결제 실패 · VOD 만료 임박", actors:["S","E"], auto:true},
+    {id:17, name:"구독 갱신·종량 청구", note:"결제 처리 한정(PG) · 사용량 계측은 내부 처리 · 종량 기준 TBD", actors:["S","P"], auto:true},
+  ]},
+  view:{title:"시청 · 모니터링", items:[
+    {id:18, name:"라이브 시청", note:"최대 1시간 되감기", actors:["S","E"]},
+    {id:19, name:"실시간 채팅량 그래프 확인", note:"하이라이트 마커 포함 · VOD에서도 재생", actors:["S","E"]},
+    {id:20, name:"하이라이트 카드 목록 확인", note:"자동+수동 · 실시간 갱신 · 만료/처리 상태 표시 · 숨김·무시 — 편집은 UC-22로 진입", actors:["S","E"]},
+    {id:21, name:"VOD 시청", note:"카드 = 챕터 · 채팅량 그래프 재생 · 라이브와 동일한 편집 진입", actors:["S","E"]},
+  ]},
+  edit:{title:"편집 · 업로드", items:[
+    {id:22, name:"클립 편집", note:"카드 또는 보관함 편집본에서 진입 · 라이브/VOD 동일", actors:["S","E"], wide:true,
+      subs:["구간 선택 (5초~3분)","오디오 트랙 켜기/끄기","트랙 미리듣기·볼륨 (무음 트랙 자동 숨김)","웨이브폼 표시","AI 자막 + 직접 수정","자막 3모드 (번인+CC / 번인 / CC)","화면 비율 (가로·9:16·1:1·상하분할·크롭)","브라우저 미리보기 (서버 렌더 없음)","제목 추천 (자막 기반)"]},
+    {id:23, name:"편집본 저장·불러오기·재출력", note:"재출력은 VOD 보관 60일 내", actors:["S","E"]},
+    {id:24, name:"업로드 템플릿 관리", note:"저장 · 지정 · 수정 · 삭제", actors:["S","E"]},
+    {id:25, name:"유튜브 업로드", note:"기본 비공개 · 제목·설명 확정 · CC 등록 — 권한 없으면 UC-29로 분기", actors:["S","E","Y"], perm:"편집자: 직접 업로드 권한"},
+    {id:26, name:"원클릭 자동 업로드", note:"템플릿 지정 전제 · 핫키 또는 카드 액션에서 편집 화면 없이 — 권한 없으면 UC-29로 분기", actors:["S","E","Y"], perm:"편집자: 원클릭 권한"},
+    {id:27, name:"업로드 상태 확인·복구", note:"진행·결과 확인 · 실패 시 재인증·수동 재시도·취소 · 유튜브 링크", actors:["S","E","Y"]},
+    {id:28, name:"클립·편집본 삭제", note:"사용자 삭제권 · 업로드된 유튜브 영상은 미삭제", actors:["S","E"]},
+    {id:29, name:"업로드 승인 요청", note:"UC-25·26에서 권한 부족 시 차단 대신 승인 대기함으로", actors:["E"]},
+    {id:30, name:"업로드 승인 / 반려", note:"승인 대기함 처리 · 클립 미리보기로 판단", actors:["S"]},
+  ]},
+  bill:{title:"구독 · 결제", items:[
+    {id:31, name:"구독 관리", note:"가입 · 플랜 변경 · 해지 · 결제 수단 · 결제 실패 복구", actors:["S","P"]},
+    {id:32, name:"사용량·청구 조회", note:"실시간 사용량(진행 중 과금 누적) · 기간별 청구 내역", actors:["S"]},
+  ]},
+};
+const COLUMNS = [["acc","live"],["auto","view"],["edit"],["bill"]];
+
+const wrap = document.getElementById("wrap");
+const svg  = document.getElementById("wires");
+const pad2 = n => String(n).padStart(2,"0");
+
+/* ---------- render use cases ---------- */
+const zonesEl = document.getElementById("zones");
+for(const col of COLUMNS){
+  const cd = document.createElement("div"); cd.className="zcol";
+  for(const key of col){
+    const g = GROUPS[key];
+    const z = document.createElement("div"); z.className="zone";
+    z.id = "zone-"+key; z.dataset.key = key;
+    z.style.flexGrow = g.items.length + (g.items.some(i=>i.subs)?2:0);
+    z.innerHTML = `<h3>${g.title} <span class="cnt">${g.items.length}</span>${g.auto?'<span class="autotag">· 시스템이 실행 · 배지 = 수혜자/데이터 제공자 (실행 주체 아님)</span>':''}</h3>`;
+    const grid = document.createElement("div"); grid.className="items";
+    for(const it of g.items){
+      const d = document.createElement("div");
+      d.className = "uc"+(it.wide?" wide":""); d.id = "uc-"+it.id; d.dataset.actors = it.actors.join(",");
+      d.innerHTML =
+        `<span class="name">${it.name}</span>`+
+        (it.note?`<span class="note">${it.note}</span>`:"")+
+        `<span class="badges"><span class="ucid">UC-${pad2(it.id)}</span>`+
+        it.actors.map(a=>`<span class="who">${ACTORS[a].name}</span>`).join("")+
+        (it.perm?`<span class="perm">${it.perm}</span>`:"")+
+        (it.auto?`<span class="auto">auto</span>`:"")+`</span>`+
+        (it.subs?`<div class="subs">${it.subs.map(s=>`<span>${s}</span>`).join("")}</div>`:"");
+      grid.appendChild(d);
+    }
+    z.appendChild(grid); cd.appendChild(z);
+  }
+  zonesEl.appendChild(cd);
+}
+
+/* ---------- render actors ---------- */
+const SIDE_ORDER = {left:[], right:[]};
+for(const [code,a] of Object.entries(ACTORS)){
+  SIDE_ORDER[a.side].push(code);
+  const el = document.createElement("div");
+  el.className="actor"; el.id="actor-"+code;
+  const fig = a.human
+    ? `<svg class="fig" width="30" height="38" viewBox="0 0 30 38" fill="none" stroke="#16181c" stroke-width="2" stroke-linecap="round"><circle cx="15" cy="6" r="4.6"/><path d="M15 11v13M4 16h22M15 24l-8 11M15 24l8 11"/></svg>`
+    : `<svg class="fig" width="34" height="26" viewBox="0 0 34 26" fill="none" stroke="#16181c" stroke-width="2"><rect x="2" y="2" width="30" height="22" rx="2.5"/><path d="M2 8.5h30"/></svg>`;
+  el.innerHTML = `${fig}<div class="aname">${a.name}</div><div class="stereo">${a.stereo}</div><div class="adesc">${a.desc}</div>`;
+  document.getElementById(a.side==="left"?"side-left":"side-right").appendChild(el);
+}
+
+/* ---------- geometry ---------- */
+const rel = el => {
+  const w = wrap.getBoundingClientRect(), r = el.getBoundingClientRect();
+  return {x:r.left-w.left, y:r.top-w.top, w:r.width, h:r.height, cy:r.top-w.top+r.height/2};
+};
+const allUCs = () => [...document.querySelectorAll(".uc")];
+
+function layoutActors(){
+  for(const [code] of Object.entries(ACTORS)){
+    const el = document.getElementById("actor-"+code);
+    const linked = allUCs().filter(u=>u.dataset.actors.split(",").includes(code));
+    if(!linked.length) continue;
+    const avg = linked.reduce((s,u)=>s+rel(u).cy,0)/linked.length;
+    el.style.top = Math.max(0, avg - el.offsetHeight/2)+"px";
+  }
+  for(const sideId of ["side-left","side-right"]){
+    const side = document.getElementById(sideId);
+    const cards = [...side.children].sort((p,q)=>p.offsetTop-q.offsetTop);
+    const maxB = side.offsetHeight;
+    for(let i=1;i<cards.length;i++){
+      const prevB = cards[i-1].offsetTop + cards[i-1].offsetHeight;
+      if(cards[i].offsetTop < prevB+16) cards[i].style.top = (prevB+16)+"px";
+    }
+    const last = cards[cards.length-1];
+    if(last && last.offsetTop+last.offsetHeight > maxB)
+      last.style.top = Math.max(0,maxB-last.offsetHeight)+"px";
+  }
+}
+
+/* 직각(orthogonal) 배선: 액터 → 세로 채널 → 역할 그룹(zone) 테두리 */
+const zoneActors = {};   /* zone key -> 참여 액터 코드 배열 */
+for(const [key,g] of Object.entries(GROUPS)){
+  const s = new Set();
+  g.items.forEach(it=>it.actors.forEach(a=>s.add(a)));
+  zoneActors[key] = [...s];
+}
+
+function drawWires(){
+  svg.setAttribute("width", wrap.scrollWidth);
+  svg.setAttribute("height", wrap.scrollHeight);
+  svg.innerHTML = "";
+  const b = rel(document.getElementById("boundary"));
+
+  /* zone별·측면별 접점 슬롯(같은 그룹에 여러 선이 겹치지 않게) */
+  const attach = {};
+  for(const key of Object.keys(GROUPS)){
+    attach[key] = {
+      left:  SIDE_ORDER.left .filter(c=>zoneActors[key].includes(c)),
+      right: SIDE_ORDER.right.filter(c=>zoneActors[key].includes(c)),
+    };
+  }
+
+  for(const side of ["left","right"]){
+    SIDE_ORDER[side].forEach((code, order)=>{
+      const ar = rel(document.getElementById("actor-"+code));
+      const zones = Object.keys(GROUPS).filter(k=>zoneActors[k].includes(code))
+        .map(k=>({k, el:document.getElementById("zone-"+k)}))
+        .sort((p,q)=>rel(p.el).cy-rel(q.el).cy);
+      const n = zones.length;
+      zones.forEach((z, idx)=>{
+        const zr = rel(z.el);
+        const peers = attach[z.k][side];
+        const j = peers.indexOf(code), m = peers.length;
+        const y2 = zr.cy + (j-(m-1)/2)*14;
+        const y1 = ar.cy + (idx-(n-1)/2)*5;
+        let x1,x2,cx;
+        if(side==="left"){ x1=ar.x+ar.w+4; x2=zr.x;      cx=b.x-5-order*6; }
+        else             { x1=ar.x-4;      x2=zr.x+zr.w; cx=b.x+b.w+5+order*6; }
+        const p=document.createElementNS("http://www.w3.org/2000/svg","path");
+        p.setAttribute("d",`M ${x1} ${y1} L ${cx} ${y1} L ${cx} ${y2} L ${x2} ${y2}`);
+        p.setAttribute("stroke","#16181c"); p.setAttribute("fill","none");
+        p.setAttribute("stroke-width","1.2"); p.setAttribute("opacity","0.5");
+        p.setAttribute("stroke-linejoin","round");
+        p.dataset.actor=code; p.dataset.zone=z.k;
+        svg.appendChild(p);
+        const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+        c.setAttribute("cx",x2); c.setAttribute("cy",y2); c.setAttribute("r","2.6");
+        c.setAttribute("fill","#16181c"); c.setAttribute("opacity","0.5");
+        c.dataset.actor=code; c.dataset.zone=z.k;
+        svg.appendChild(c);
+      });
+    });
+  }
+}
+
+/* ---------- hover focus ---------- */
+function clearFocus(){
+  wrap.classList.remove("focus");
+  svg.querySelectorAll(".on").forEach(p=>p.classList.remove("on"));
+  document.querySelectorAll(".lit").forEach(el=>el.classList.remove("lit"));
+}
+function focusActor(code){
+  wrap.classList.add("focus");
+  svg.querySelectorAll("path,circle").forEach(p=>p.classList.toggle("on", p.dataset.actor===code));
+  allUCs().forEach(u=>u.classList.toggle("lit", u.dataset.actors.split(",").includes(code)));
+  document.querySelectorAll(".actor").forEach(a=>a.classList.toggle("lit", a.id==="actor-"+code));
+}
+function focusUC(u){
+  const codes = u.dataset.actors.split(",").filter(Boolean);
+  const zkey = u.closest(".zone").dataset.key;
+  wrap.classList.add("focus");
+  svg.querySelectorAll("path,circle").forEach(p=>p.classList.toggle("on", p.dataset.zone===zkey && codes.includes(p.dataset.actor)));
+  allUCs().forEach(x=>x.classList.toggle("lit", x===u));
+  document.querySelectorAll(".actor").forEach(a=>a.classList.toggle("lit", codes.includes(a.id.replace("actor-",""))));
+}
+for(const [code] of Object.entries(ACTORS)){
+  const el=document.getElementById("actor-"+code);
+  el.addEventListener("mouseenter",()=>focusActor(code));
+  el.addEventListener("mouseleave",clearFocus);
+}
+document.addEventListener("mouseover",e=>{
+  const u=e.target.closest(".uc"); if(u) focusUC(u);
+});
+document.addEventListener("mouseout",e=>{ if(e.target.closest(".uc")) clearFocus(); });
+
+function refresh(){ layoutActors(); drawWires(); }
+window.addEventListener("resize",()=>{clearTimeout(window.__t);window.__t=setTimeout(refresh,120);});
+refresh();
+</script>
+</body>
+</html>

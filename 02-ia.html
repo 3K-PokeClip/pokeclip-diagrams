@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokeClip — ② IA (정보 구조)</title>
+<style>
+  :root{
+    --bg:#fbfbfc; --ink:#16181c; --sub:#5c626c; --faint:#9aa1ab; --line:#3a3f47;
+    --stub:15px;
+    --mono:Consolas,"Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    font-size:13px; line-height:1.4; padding:12px 18px 24px;
+  }
+  header.page{margin-bottom:10px}
+  h1{display:inline-block;background:var(--ink);color:#fff;font-size:20px;font-weight:800;
+     letter-spacing:.01em;padding:4px 15px 5px}
+  .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
+  .meta b{color:var(--ink)}
+
+  #chart{position:relative;overflow:hidden;padding:0;cursor:grab;user-select:none;
+         border:1px solid #e2e6ec;border-radius:8px;background-color:#fff;
+         background-image:radial-gradient(#dde2ea 1px, transparent 1px);background-size:22px 22px}
+  #chart.panning{cursor:grabbing}
+  #inner{position:absolute;left:0;top:0;width:max-content;transform-origin:0 0}
+  #ctl{position:absolute;right:10px;top:10px;z-index:5;display:flex;gap:2px;align-items:center;
+       background:#fff;border:1.2px solid var(--ink);border-radius:6px;padding:3px 5px;
+       font-family:var(--mono);font-size:11px;cursor:default}
+  #ctl button{border:none;background:none;font-family:var(--mono);font-size:12px;
+       padding:2px 7px;cursor:pointer;border-radius:4px}
+  #ctl button:hover{background:#eef0f4}
+  #ctl #zoomPct{min-width:42px;text-align:center;color:var(--sub);font-size:10.5px}
+  #rootRow{display:flex;justify-content:center;margin-bottom:8px;padding-top:6px}
+  #cols{display:flex;align-items:flex-start;gap:34px;margin-top:132px}
+  .col{flex:0 0 auto;padding-top:24px}
+  #cwires{position:absolute;inset:0;pointer-events:none}
+  .entry{position:absolute;z-index:2}
+
+  /* ---- 좌→우 트리 (컬럼 내부) ---- */
+  .col ul{list-style:none;display:flex;flex-direction:column;gap:8px;
+          padding-left:30px;position:relative}
+  .col li{display:flex;align-items:flex-start;position:relative}
+  .col li::after{content:"";position:absolute;left:-15px;top:-5px;bottom:-5px;
+                 border-left:1.2px solid var(--line)}
+  .col li:first-child::after{top:var(--stub)}
+  .col li:last-child::after{bottom:calc(100% - var(--stub))}
+  .col li:first-child:last-child::after{content:none}
+  .col li::before{content:"";position:absolute;left:-15px;top:var(--stub);width:15px;
+                  border-top:1.2px solid var(--line)}
+  .col li>ul::before{content:"";position:absolute;left:0;top:var(--stub);width:15px;
+                     border-top:1.2px solid var(--line)}
+  .col>ul{padding-left:0}
+  .col>ul>li::before,.col>ul>li::after{content:none}
+
+  .n{border:1.2px solid var(--ink);background:#fff;border-radius:4px;
+     padding:5px 10px 4px;text-align:center;min-width:92px;max-width:225px;flex:0 0 auto}
+  .n .nm{font-weight:600;font-size:11.5px;line-height:1.3}
+  .n .sb{font-size:9px;color:var(--sub);line-height:1.3;margin-top:1px}
+  .n .tag{display:inline-block;font-size:8.5px;font-family:var(--mono);
+          border:1px solid var(--faint);color:var(--sub);padding:0 4px;margin-left:4px;vertical-align:1px}
+  .n .tbd{display:inline-block;font-size:8.5px;font-family:var(--mono);
+          border:1px solid var(--ink);padding:0 4px;margin-left:4px;vertical-align:1px}
+  .n .uc{display:inline-block;font-size:8px;font-family:var(--mono);
+         background:#eef0f4;border:1px solid #d3d7dd;color:var(--sub);
+         padding:0 4px;margin-left:4px;vertical-align:1px;white-space:nowrap}
+  .n .ob{display:inline-block;font-size:8.5px;font-family:var(--mono);
+         background:var(--ink);color:#fff;padding:0 5px;margin-left:4px;vertical-align:1px}
+  #rootRow .n{background:var(--ink);color:#fff;border-color:var(--ink);padding:7px 20px}
+  #rootRow .n .nm{font-size:14.5px;font-weight:800}
+  .entry .n{border-width:1.5px}
+  .entry .n .nm{font-weight:800;font-size:12px}
+  .head>.n{border-width:1.6px}
+  .head>.n .nm{font-weight:800;font-size:12.5px}
+  .scr>.n .nm{font-weight:700}
+  .leaf>.n{border-color:#8f96a0;border-width:1px}
+  .leaf>.n .nm{font-weight:400;font-size:11px}
+
+  footer.notes{margin-top:8px;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;max-width:1650px;margin-left:auto;margin-right:auto}
+  .notebox{border:1px solid #d3d7dd;background:#fff;padding:8px 13px}
+  .notebox h4{font-size:10.5px;letter-spacing:.05em;margin-bottom:4px;font-weight:800}
+  .notebox li{margin-left:16px;font-size:11px;margin-bottom:2px;color:#3a3f47}
+  .notebox .tbd{font-family:var(--mono);font-size:9px;border:1px solid var(--ink);padding:0 4px;margin-left:4px}
+  .notebox .ob{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 5px}
+  .notebox .uc{font-family:var(--mono);font-size:9px;background:#eef0f4;border:1px solid #d3d7dd;color:var(--sub);padding:0 4px}
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>Information Architecture</h1>
+  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.4 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 v2.2 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+</header>
+
+<div id="chart">
+  <div id="ctl">
+    <button id="btnFit" title="화면에 맞춤">맞춤</button>
+    <button id="btnZout" title="축소">−</button>
+    <span id="zoomPct">100%</span>
+    <button id="btnZin" title="확대">＋</button>
+    <button id="btn100" title="원본 크기">1:1</button>
+  </div>
+  <div id="inner">
+    <svg id="cwires"></svg>
+    <div id="rootRow"><div class="n" id="rootN"><div class="nm">PokeClip</div></div></div>
+    <div class="entry" id="entryLogin"><div class="n"><div class="nm">구글 로그인<span class="uc">UC-01</span></div><div class="sb">OAuth · 스트리머/편집자 공통<span class="ob">1회</span> 약관 동의(이용약관 · 개인정보 수집 · 마케팅 선택)</div></div></div>
+    <div class="entry" id="entryHome"><div class="n"><div class="nm">웹 앱<span class="tag">로그인 후</span></div><div class="sb">글로벌 내비게이션 — 어느 화면에서든 3그룹 접근</div></div></div>
+    <div id="cols"></div>
+  </div>
+</div>
+
+<footer class="notes">
+  <div class="notebox">
+    <h4>표기</h4>
+    <ul>
+      <li>컬럼 머리(굵은 테두리) = 표면/내비 그룹 · 굵은 글씨 = 화면 · 회색 얇은 박스 = 세부 기능·상태</li>
+      <li><span class="uc">UC-nn</span> ① 유스케이스 매핑(추적성) · <span class="ob">1회</span> 온보딩 — 최초 1회만 수행 · «S»/«E» 전용 권한</li>
+      <li>웹 앱 내비 그룹 3개(시청·모니터링 / 클립 제작·보관 / 운영·계정) = 글로벌 메뉴 — 로그인 후 어느 화면에서든 접근. 홈은 그중 첫 화면</li>
+      <li>depth 1 분기 기준: 접근 주체 · 인증 방식 · 실행 환경이 갈리면 별도 갈래</li>
+    </ul>
+  </div>
+  <div class="notebox">
+    <h4>유스케이스 매핑 원칙</h4>
+    <ul>
+      <li>①에서 제외한 목록 조회는 화면으로 등장 — 홈(방송 목록)·보관함. UC 배지 없는 노드가 그것</li>
+      <li>시스템 자동 UC-13~15는 화면이 아니므로 IA에 없음 — 결과물(카드·VOD)로만 나타나고, UC-16(알림)은 알림함으로 수신</li>
+    </ul>
+  </div>
+  <div class="notebox">
+    <h4>미정 (TBD)</h4>
+    <ul>
+      <li>VOD 오디오 트랙 전환 시청 — 보류 권고, 미반영<span class="tbd">TBD</span></li>
+      <li>알림 수신 채널 — 웹 푸시 · 이메일 여부<span class="tbd">TBD</span></li>
+      <li>무료 체험·무료 티어 유무 — 사업 판단<span class="tbd">TBD</span></li>
+      <li>오픈소스 라이선스 고지 — OBS·FFmpeg 의존성 확인 필요<span class="tbd">TBD</span></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+const COLS = [
+  {n:"공개 웹", s:"비로그인 · 누구나 접근", c:[
+    {n:"랜딩 · 서비스 소개", scr:true, c:[
+      {n:"핵심 가치", s:"방송이 끝나기 전에 클립이 올라간다"},
+      {n:"기능 소개", s:"자동 하이라이트 · 멀티트랙 편집 · 원클릭 업로드"},
+      {n:"지원 플랫폼", s:"방송 치지직 · SOOP → 업로드 유튜브"},
+      {n:"데모 · 샘플 클립"},
+    ]},
+    {n:"요금 안내", scr:true, c:[
+      {n:"구독 플랜 비교", u:"31"},
+      {n:"종량 요금 기준", tbd:true, s:"기준 미정"},
+      {n:"무료 체험 · 무료 티어", tbd:true, s:"사업 판단 미정"},
+      {n:"편집자 무료 안내", s:"과금 주체는 스트리머 단독"},
+    ]},
+    {n:"플러그인 다운로드", scr:true, u:"04", c:[
+      {n:"설치 파일", s:"OS · OBS 버전별"},
+      {n:"설치 가이드 · 시스템 요구사항"},
+      {n:"릴리스 노트"},
+    ]},
+    {n:"도움말 · 문의", scr:true, c:[
+      {n:"사용 가이드"},
+      {n:"자주 묻는 질문", s:"요금 · 설치 · 편집 전반 (단일 FAQ)"},
+      {n:"문의 접수", u:"10", s:"가입 전 · 로그인 후 공통"},
+      {n:"공지사항", s:"점검 · 업데이트 안내"},
+    ]},
+    {n:"서비스 상태", scr:true, s:"장애·점검 공개 고지", c:[
+      {n:"기능별 상태", s:"인제스트 · 편집 · 업로드"},
+      {n:"장애 이력 · 진행 상황"},
+    ]},
+    {n:"약관 · 정책", scr:true, c:[
+      {n:"이용약관"},
+      {n:"개인정보처리방침"},
+      {n:"환불 · 청약철회 정책", s:"유료 서비스 필수"},
+      {n:"사업자 정보", s:"상호·대표자·사업자등록번호·통신판매업 신고번호 — 전자상거래법"},
+      {n:"오픈소스 라이선스", tbd:true, s:"OBS·FFmpeg 계열 의존성 확인 후 확정"},
+    ]},
+  ]},
+  {n:"OBS 플러그인", tag:"S", s:"스트리머 로컬 앱 · Stream Key 인증(별도 로그인 없음)", u:"04·11·12", c:[
+    {n:"연결 설정", u:"04", ob:true, c:[
+      {n:"Stream Key 등록", s:"웹에서 발급 → 붙여넣기 = 계정·채널 연결"},
+      {n:"인증 실패 안내", s:"오타 · 만료 · 폐기된 키 · 재발급 경로"},
+      {n:"송출 테스트", s:"방송 전 사전 점검"},
+    ]},
+    {n:"오디오 트랙 매핑", u:"04", s:"소스 → 트랙 · 최대 10", c:[
+      {n:"트랙 이름 · 순서"},
+      {n:"매핑 확인"},
+    ]},
+    {n:"동시 송출", u:"11", c:[
+      {n:"자동 시작 · 종료", s:"OBS 방송 시작/종료에 연동"},
+      {n:"수동 토글", s:"예외 상황용"},
+    ]},
+    {n:"상태 표시", c:[
+      {n:"연결 상태", s:"정상 · 재연결 중 · 끊김"},
+      {n:"트랙별 수신", s:"어느 트랙에 소리가 들어오는지"},
+      {n:"마킹 피드백", u:"12", s:"핫키 인식 확인"},
+    ]},
+    {n:"핫키 하이라이트 마킹", u:"12·26", s:"앞뒤 구간 → 대시보드 카드 · 템플릿 지정 시 자동 업로드"},
+  ]},
+  {n:"시청 · 모니터링", web:true, s:"글로벌 내비 1", c:[
+    {n:"홈 · 방송 목록", scr:true, s:"로그인 후 첫 화면", c:[
+      {n:"시작 가이드", ob:true, c:[
+        {n:"스트리머 체크리스트", tag:"S", s:"채널 연동 → 플러그인 설치 → 구독 결제 → 첫 방송"},
+        {n:"편집자 체크리스트", tag:"E", s:"스트리머 신청 → 승인 대기 → 첫 편집"},
+      ]},
+      {n:"라이브 목록", s:"진행 중 방송"},
+      {n:"방송 상태 · 신규 카드 수", s:"마지막 확인 이후 증가분"},
+      {n:"VOD 목록", s:"60일 보관 · 종료 직후 준비 중 표시"},
+      {n:"검색 · 필터", s:"방송일 · 상태 · 담당 스트리머«E»"},
+      {n:"스트리머 찾기 · 신청", tag:"E", u:"05", s:"바로가기 — 검색·신청 후 관리는 협업 관리에서"},
+    ]},
+    {n:"라이브 대시보드", scr:true, s:"홈에서 방송 선택", c:[
+      {n:"방송 정보", s:"제목 · 플랫폼 · 시작 시각 · 접근 편집자"},
+      {n:"플레이어", u:"18", c:[
+        {n:"라이브 시청"},
+        {n:"되감기", s:"최대 1시간"},
+        {n:"카드 시점 이동", s:"카드 → 해당 시점 재생"},
+      ]},
+      {n:"채팅량 그래프", u:"19", c:[
+        {n:"실시간 갱신"},
+        {n:"하이라이트 마커"},
+      ]},
+      {n:"하이라이트 카드 목록", u:"20", c:[
+        {n:"자동 · 수동 구분"},
+        {n:"감지 근거 · 생성 시각", s:"채팅량 급증 배수 등"},
+        {n:"처리 상태", s:"미처리 · 편집 중(누가) · 클립 완료 — 중복 작업 방지"},
+        {n:"실시간 갱신"},
+        {n:"만료 표시", s:"되감기 1시간 이탈"},
+        {n:"카드 액션", u:"22·26", s:"시점 이동 / 편집기 진입 / 원클릭 업로드(템플릿 지정 시) / 숨김·무시"},
+        {n:"숨김 카드 보기", u:"20", s:"오탐 되돌리기"},
+      ]},
+    ]},
+    {n:"VOD 뷰어", scr:true, u:"21", c:[
+      {n:"방송 정보", s:"제목 · 방송일 · VOD 만료일(60일)"},
+      {n:"플레이어", s:"챕터(=카드) 탐색 · 시점 이동"},
+      {n:"채팅량 그래프", u:"19", s:"수집분 재생 — 하이라이트 탐색용"},
+      {n:"하이라이트 카드 목록", u:"20", s:"만료 카드 재활성화 · 편집기 진입 · 원클릭 업로드 · 숨김·무시"},
+    ]},
+  ]},
+  {n:"클립 제작 · 보관", web:true, s:"글로벌 내비 2", c:[
+    {n:"클립 편집기", scr:true, u:"22", s:"컨텍스트 진입 — 카드 또는 보관함 편집본에서만", c:[
+      {n:"타임라인", c:[
+        {n:"구간 선택", s:"5초 ~ 3분"},
+        {n:"웨이브폼", s:"트랙별 파형"},
+      ]},
+      {n:"오디오 트랙 패널", c:[
+        {n:"켜기 / 끄기"},
+        {n:"솔로 미리듣기 · 볼륨"},
+        {n:"무음 트랙 자동 숨김"},
+      ]},
+      {n:"자막 패널", c:[
+        {n:"AI 자막 생성 · 수정"},
+        {n:"모드 선택", s:"번인+CC / 번인 / CC"},
+      ]},
+      {n:"화면 비율", c:[
+        {n:"가로 · 9:16 · 1:1 · 상하분할"},
+        {n:"장면 캡처 크롭", s:"위치 조정"},
+      ]},
+      {n:"미리보기", s:"브라우저 시뮬레이션"},
+      {n:"제목 추천", s:"자막 기반 후보"},
+      {n:"자동 임시 저장", s:"이탈·새로고침 대비 · 편집본 저장과 별개"},
+      {n:"완료 액션", c:[
+        {n:"편집본 저장", u:"23"},
+        {n:"렌더 큐 등록", s:"비동기 — 편집자는 즉시 다음 카드로"},
+        {n:"업로드", u:"25·29", s:"직접 or 승인 요청 (권한별)"},
+        {n:"템플릿으로 저장", u:"24"},
+      ]},
+    ]},
+    {n:"보관함", scr:true, s:"영구 보관", c:[
+      {n:"클립 목록", u:"27·28", s:"렌더 결과물 — 업로드 상태 · 삭제"},
+      {n:"편집본 목록", u:"23·28", s:"편집 설정 — 재편집 · 삭제"},
+      {n:"재출력 가능 여부", u:"23", s:"VOD 만료 시 불가 · 만료일 표시"},
+      {n:"삭제 정책 안내", u:"28", s:"영구 삭제 · 유튜브 업로드본에는 영향 없음"},
+      {n:"검색 · 필터", s:"방송일 · 상태 · 제목"},
+    ]},
+    {n:"템플릿 관리", scr:true, u:"24", c:[
+      {n:"템플릿 목록", s:"저장 · 수정 · 삭제"},
+      {n:"원클릭 지정", u:"26", s:"핫키/카드 자동 업로드에 사용할 템플릿 선택"},
+    ]},
+  ]},
+  {n:"운영 · 계정", web:true, s:"글로벌 내비 3", c:[
+    {n:"업로드 · 승인", scr:true, c:[
+      {n:"업로드 상태", u:"27", c:[
+        {n:"진행 · 결과"},
+        {n:"실패 복구", s:"재인증 · 수동 재시도 · 취소"},
+        {n:"유튜브 링크 · 스튜디오 이동", s:"공개 전환은 스튜디오에서"},
+      ]},
+      {n:"승인 대기함", c:[
+        {n:"클립 미리보기", s:"승인 판단 근거 · 방송 중 즉시 확인"},
+        {n:"승인 / 반려", tag:"S", u:"30"},
+        {n:"내 요청 상태", tag:"E", u:"29"},
+      ]},
+    ]},
+    {n:"알림함", scr:true, u:"16", s:"전역 헤더에서 접근 · 방송 시작 · 승인 요청 · 승인 결과 · 결제 실패"},
+    {n:"도움말 · 문의", scr:true, u:"10", s:"공개 웹 화면 공유", c:[
+      {n:"내 문의 내역", u:"10", s:"접수 상태 · 답변 확인"},
+    ]},
+    {n:"협업 관리", scr:true, c:[
+      {n:"스트리머 접근", tag:"E", u:"05", c:[
+        {n:"신청 · 진행 상태"},
+        {n:"내 권한 단계", s:"기본 / 직접 업로드 / 원클릭"},
+        {n:"협업 종료", u:"06", s:"종료 즉시 해당 스트리머 자산 접근 불가"},
+      ]},
+      {n:"편집자 관리", tag:"S", u:"07", c:[
+        {n:"신청 대기 목록", s:"승인 / 반려"},
+        {n:"승인된 편집자", s:"권한 단계 변경 · 회수"},
+        {n:"권한 회수 결과 안내", s:"회수 즉시 전면 차단 — 편집본·클립 열람 불가"},
+        {n:"편집자별 활동 이력", s:"제작 클립 · 업로드 이력"},
+      ]},
+    ]},
+    {n:"설정", scr:true, c:[
+      {n:"채널 연동", tag:"S", u:"02·03", ob:true, c:[
+        {n:"방송 채널", u:"02", s:"치지직/SOOP · 연동 · 해제"},
+        {n:"유튜브 채널", u:"03", c:[
+          {n:"연동 · 해제", s:"OAuth"},
+          {n:"업로드 대상 채널 선택", s:"채널 여러 개 운영 시"},
+          {n:"연동 만료 재인증", s:"업로드 실패 주원인"},
+        ]},
+      ]},
+      {n:"플러그인", tag:"S", u:"04", ob:true, c:[
+        {n:"Stream Key", s:"발급 · 재발급 · 폐기"},
+        {n:"플러그인 연결 확인", s:"연결 여부 · 최근 송출"},
+        {n:"다운로드 안내", s:"공개 웹 다운로드 페이지로"},
+      ]},
+      {n:"알림 설정", u:"08", c:[
+        {n:"알림 종류별 on/off", s:"방송 시작 · 승인 요청 · 승인 결과 · 결제 실패 · VOD 만료 임박"},
+        {n:"수신 채널", tbd:true, s:"웹 푸시 · 이메일 — 미정"},
+      ]},
+      {n:"구독 · 결제", tag:"S", u:"31·32", c:[
+        {n:"플랜 · 결제 수단", u:"31", ob:true},
+        {n:"실시간 사용량", u:"32", c:[
+          {n:"항목별 측정값", tbd:true, s:"종량 기준 미정"},
+          {n:"예상 청구액 · 한도", s:"진행 중 과금 누적"},
+        ]},
+        {n:"청구 내역", u:"32"},
+        {n:"결제 상태 · 실패 복구", u:"17·31", s:"갱신 실패 · 결제 수단 갱신"},
+      ]},
+      {n:"계정", u:"01·09", c:[
+        {n:"프로필", s:"구글 계정 정보 · 표시 이름"},
+        {n:"로그아웃"},
+        {n:"계정 삭제", u:"09", s:"활성 구독 해지 선행 · 보관물 처리 TBD"},
+      ]},
+    ]},
+  ]},
+  {n:"운영자 콘솔", s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계", c:[
+    {n:"스트리머 · 계정 관리"},
+    {n:"시스템 모니터링", s:"인제스트 · 렌더 큐 · 스토리지"},
+    {n:"CS · 분쟁 대응"},
+    {n:"정산 · 매출 관리"},
+  ]},
+];
+
+function nodeHTML(d){
+  return `<div class="nm">${d.n}`+
+    (d.tag?`<span class="tag">${d.tag}</span>`:"")+
+    (d.u?`<span class="uc">UC-${d.u}</span>`:"")+
+    (d.ob?`<span class="ob">1회</span>`:"")+
+    (d.tbd?`<span class="tbd">TBD</span>`:"")+`</div>`+
+    (d.s?`<div class="sb">${d.s}</div>`:"");
+}
+function render(d, depth){
+  const li = document.createElement("li");
+  li.className = (depth===0?"head":"") + (d.scr?" scr":"") + (d.c?"":" leaf");
+  const n = document.createElement("div"); n.className="n"; n.innerHTML = nodeHTML(d);
+  li.appendChild(n);
+  if(d.c){
+    const ul = document.createElement("ul");
+    d.c.forEach(ch=>ul.appendChild(render(ch, depth+1)));
+    li.appendChild(ul);
+  }
+  return li;
+}
+const colsEl = document.getElementById("cols");
+const headNodes = [];
+for(const c of COLS){
+  const col = document.createElement("div"); col.className="col";
+  const ul = document.createElement("ul");
+  const li = render(c, 0);
+  ul.appendChild(li); col.appendChild(ul); colsEl.appendChild(col);
+  headNodes.push(li.querySelector(":scope > .n"));
+}
+
+/* 진입 체인 배치 + 루트/체인 → 컬럼 머리 직각 배선 */
+const inner = document.getElementById("inner");
+function layoutAndWire(){
+  inner.style.transform = "none";
+  const svg = document.getElementById("cwires");
+  const cr = inner.getBoundingClientRect();
+  const px = el=>{const r=el.getBoundingClientRect();
+    return {x:r.left-cr.left, y:r.top-cr.top, w:r.width, h:r.height,
+            cx:r.left-cr.left+r.width/2, bot:r.top-cr.top+r.height};};
+
+  const root = px(document.getElementById("rootN"));
+  const heads = headNodes.map((h,i)=>Object.assign(px(h), {web: !!COLS[i].web}));
+  /* web:true = 로그인 후 웹 앱 컬럼 — 진입 체인을 그 중심 위에 둔다 */
+  const webHeads = heads.filter(h=>h.web), directHeads = heads.filter(h=>!h.web);
+  const webXs = webHeads.map(h=>h.cx);
+  const webCX = webXs.reduce((a,b)=>a+b,0)/webXs.length;
+
+  const login = document.getElementById("entryLogin");
+  const home  = document.getElementById("entryHome");
+  login.style.left = Math.round(webCX - login.offsetWidth/2)+"px";
+  login.style.top  = Math.round(root.bot + 14)+"px";
+  home.style.left  = Math.round(webCX - home.offsetWidth/2)+"px";
+  home.style.top   = Math.round(root.bot + 14 + login.offsetHeight + 12)+"px";
+
+  const L = px(login.firstElementChild ? login : login), H = px(home);
+  const Lr = px(login);
+
+  svg.setAttribute("width", inner.scrollWidth);
+  svg.setAttribute("height", inner.scrollHeight);
+  svg.innerHTML = "";
+  const seg = d=>{const p=document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("d",d);p.setAttribute("stroke","#3a3f47");p.setAttribute("fill","none");
+    p.setAttribute("stroke-width","1.2");svg.appendChild(p);};
+
+  /* 루트 → depth 1 버스 (공개 웹 · OBS 플러그인 · 웹 앱 진입 · 운영자 콘솔) */
+  const busY0 = root.bot + 7;
+  const dropXs = directHeads.map(h=>h.cx).concat([webCX]);
+  seg(`M ${root.cx} ${root.bot} L ${root.cx} ${busY0}`);
+  seg(`M ${Math.min(root.cx, ...dropXs)} ${busY0} L ${Math.max(root.cx, ...dropXs)} ${busY0}`);
+  directHeads.forEach(h=>seg(`M ${h.cx} ${busY0} L ${h.cx} ${h.y}`));
+  /* 웹 앱 진입 체인: 구글 로그인 → 홈 */
+  seg(`M ${webCX} ${busY0} L ${webCX} ${Lr.y}`);
+  seg(`M ${webCX} ${Lr.bot} L ${webCX} ${H.y}`);
+  /* 홈 → 웹 앱 내비 그룹 3개 */
+  const busY1 = H.bot + 11;
+  seg(`M ${webCX} ${H.bot} L ${webCX} ${busY1}`);
+  seg(`M ${Math.min(...webXs)} ${busY1} L ${Math.max(...webXs)} ${busY1}`);
+  webHeads.forEach(h=>seg(`M ${h.cx} ${busY1} L ${h.cx} ${h.y}`));
+  fit();
+}
+/* ---- 피그마식 캔버스: 드래그 팬 + 휠/버튼 줌 ---- */
+const chart = document.getElementById("chart");
+let vx=0, vy=0, vs=1;
+function applyView(){
+  inner.style.transform = `translate(${vx}px, ${vy}px) scale(${vs})`;
+  document.getElementById("zoomPct").textContent = Math.round(vs*100)+"%";
+}
+function sizeChart(){
+  chart.style.height = Math.max(320, window.innerHeight - chart.offsetTop - 12)+"px";
+}
+function fit(){
+  sizeChart();
+  const iw = inner.scrollWidth, ih = inner.scrollHeight;
+  const aw = chart.clientWidth, ah = chart.clientHeight;
+  vs = Math.min(aw/iw, ah/ih)*0.97;
+  vs = Math.max(0.1, Math.min(vs, 3));
+  vx = (aw - iw*vs)/2; vy = (ah - ih*vs)/2;
+  applyView();
+}
+function zoomAt(cx, cy, f){
+  const ns = Math.max(0.1, Math.min(vs*f, 3));
+  vx = cx - (cx - vx)*(ns/vs); vy = cy - (cy - vy)*(ns/vs);
+  vs = ns; applyView();
+}
+chart.addEventListener("wheel", e=>{
+  e.preventDefault();
+  const r = chart.getBoundingClientRect();
+  if(e.ctrlKey) zoomAt(e.clientX-r.left, e.clientY-r.top, Math.exp(-e.deltaY*0.0015));
+  else { vx -= e.deltaX; vy -= e.deltaY; applyView(); }
+}, {passive:false});
+let pan=null;
+chart.addEventListener("mousedown", e=>{
+  if(e.target.closest("#ctl")) return;
+  pan={x:e.clientX, y:e.clientY}; chart.classList.add("panning"); e.preventDefault();
+});
+window.addEventListener("mousemove", e=>{
+  if(!pan) return;
+  vx += e.clientX-pan.x; vy += e.clientY-pan.y;
+  pan={x:e.clientX, y:e.clientY}; applyView();
+});
+window.addEventListener("mouseup", ()=>{pan=null; chart.classList.remove("panning");});
+chart.addEventListener("contextmenu", e=>e.preventDefault());
+document.getElementById("btnFit").addEventListener("click", fit);
+document.getElementById("btnZin").addEventListener("click", ()=>zoomAt(chart.clientWidth/2, chart.clientHeight/2, 1.2));
+document.getElementById("btnZout").addEventListener("click", ()=>zoomAt(chart.clientWidth/2, chart.clientHeight/2, 1/1.2));
+document.getElementById("btn100").addEventListener("click", ()=>{vs=1; applyView();});
+
+layoutAndWire();
+window.addEventListener("resize",()=>{clearTimeout(window.__t);window.__t=setTimeout(layoutAndWire,120);});
+</script>
+</body>
+</html>

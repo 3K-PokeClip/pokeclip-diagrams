@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokeClip — 설계 다이어그램</title>
+<style>
+  :root{
+    --bg:#fbfbfc; --ink:#16181c; --sub:#5c626c; --faint:#9aa1ab;
+    --mono:Consolas,"Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    font-size:14px; line-height:1.5; padding:48px 24px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  h1{display:inline-block;background:var(--ink);color:#fff;font-size:24px;font-weight:800;
+     letter-spacing:.01em;padding:6px 20px 7px}
+  .meta{margin:10px 0 34px;color:var(--sub);font-size:12.5px}
+  .meta b{color:var(--ink)}
+
+  .list{display:flex;flex-direction:column;gap:12px;width:100%;max-width:640px}
+  a.card{display:flex;align-items:center;gap:16px;text-decoration:none;color:var(--ink);
+         background:#fff;border:1.3px solid var(--ink);border-radius:6px;padding:14px 18px;
+         transition:box-shadow .15s ease, transform .15s ease}
+  a.card:hover{box-shadow:0 3px 0 var(--ink);transform:translateY(-2px)}
+  .num{font-family:var(--mono);font-size:13px;font-weight:700;border:1.4px solid var(--ink);
+       width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+       border-radius:4px;flex:0 0 auto}
+  .body{flex:1}
+  .ttl{font-weight:800;font-size:15px}
+  .ttl .en{font-weight:400;font-size:11.5px;color:var(--sub);margin-left:6px}
+  .desc{font-size:11.5px;color:var(--sub);margin-top:1px}
+  .st{font-family:var(--mono);font-size:10px;border:1px solid var(--ink);padding:1px 7px;flex:0 0 auto}
+  .card.todo{border-color:#c9ced6;color:var(--sub);pointer-events:none;background:transparent}
+  .card.todo .num{border-color:#c9ced6}
+  .card.todo .st{border-color:#c9ced6;color:var(--faint)}
+  .card.todo .ttl{color:var(--sub)}
+
+  .foot{margin-top:30px;font-size:11px;color:var(--faint)}
+</style>
+</head>
+<body>
+
+<h1>PokeClip Design Docs</h1>
+<div class="meta">설계 다이어그램 <b>5</b>종 · 2026-07-23 · 유스케이스 → IA → 서비스 → 시스템 → 클라우드 순으로 확정</div>
+
+<nav class="list">
+  <a class="card" href="01-usecase.html">
+    <span class="num">01</span>
+    <span class="body">
+      <span class="ttl">유스케이스 다이어그램<span class="en">Use Case Diagram</span></span>
+      <span class="desc">액터 6 · 유스케이스 32 · 그룹 6 — Codex 최종 검증 결함 0건</span>
+    </span>
+    <span class="st">v3.1</span>
+  </a>
+  <a class="card" href="02-ia.html">
+    <span class="num">02</span>
+    <span class="body">
+      <span class="ttl">IA · 정보 구조<span class="en">Information Architecture</span></span>
+      <span class="desc">depth 1 4갈래 · 노드 165 · UC 배지 50개 ①과 정합 · Codex 검증 결함 0건</span>
+    </span>
+    <span class="st">v2.5</span>
+  </a>
+  <a class="card" href="03-service-architecture.html">
+    <span class="num">03</span>
+    <span class="body">
+      <span class="ttl">서비스 아키텍처<span class="en">Service Architecture</span></span>
+      <span class="desc">서비스 블록 21 · 접점 4 · 외부 4 · 흐름 5 — UC 32개 전부 매핑(누락 0)</span>
+    </span>
+    <span class="st">v1.0</span>
+  </a>
+  <a class="card todo" href="04-system-architecture.html">
+    <span class="num">04</span>
+    <span class="body">
+      <span class="ttl">시스템 아키텍처<span class="en">System Architecture</span></span>
+      <span class="desc">예정</span>
+    </span>
+    <span class="st">TODO</span>
+  </a>
+  <a class="card todo" href="05-cloud-architecture.html">
+    <span class="num">05</span>
+    <span class="body">
+      <span class="ttl">클라우드 아키텍처<span class="en">Cloud Architecture · AWS</span></span>
+      <span class="desc">예정</span>
+    </span>
+    <span class="st">TODO</span>
+  </a>
+</nav>
+
+<div class="foot">http://localhost:8770 · self-contained HTML · 다이어그램이 확정되면 이 목록의 상태가 갱신됩니다</div>
+
+</body>
+</html>
