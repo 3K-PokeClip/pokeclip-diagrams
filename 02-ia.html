@@ -69,6 +69,21 @@
          padding:0 4px;margin-left:4px;vertical-align:1px;white-space:nowrap}
   .n .ob{display:inline-block;font-size:8.5px;font-family:var(--mono);
          background:var(--ink);color:#fff;padding:0 5px;margin-left:4px;vertical-align:1px}
+  .n .ph{display:inline-block;font-size:8.5px;font-family:var(--mono);
+         background:var(--ink);color:#fff;padding:0 5px;margin-left:4px;vertical-align:1px}
+
+  /* ── 개발 단계(phase) 필터 — 여러 개 동시 선택 가능 ── */
+  .phases{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .pchip{border:1.2px solid var(--ink);background:#fff;border-radius:3px;padding:1px 9px;
+         font-size:11px;cursor:pointer;display:flex;gap:5px;align-items:center;font-family:inherit}
+  .pchip .pno{font-family:var(--mono);font-size:9.5px;color:var(--sub)}
+  .pchip .ptag{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+  .pchip:hover{background:#f3f5f8}
+  .pchip.on{background:var(--ink);color:#fff}
+  .pchip.on .pno,.pchip.on .ptag{color:#c8ccd2}
+  .phint{font-size:10.5px;color:var(--faint);margin-left:2px}
+  #inner.pfilter .n{transition:opacity .18s ease}
+  #inner.pfilter .n.poff{opacity:.12}
   #rootRow .n{background:var(--ink);color:#fff;border-color:var(--ink);padding:7px 20px}
   #rootRow .n .nm{font-size:14.5px;font-weight:800}
   .entry .n{border-width:1.5px}
@@ -92,7 +107,8 @@
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.5 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 v3.1 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.6 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 v3.1 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="phases" id="phases"></div>
 </header>
 
 <div id="chart">
@@ -106,8 +122,8 @@
   <div id="inner">
     <svg id="cwires"></svg>
     <div id="rootRow"><div class="n" id="rootN"><div class="nm">PokeClip</div></div></div>
-    <div class="entry" id="entryLogin"><div class="n"><div class="nm">구글 로그인<span class="uc">UC-01</span></div><div class="sb">OAuth · 스트리머/편집자 공통<span class="ob">1회</span> 약관 동의(이용약관 · 개인정보 수집 · 마케팅 선택)</div></div></div>
-    <div class="entry" id="entryHome"><div class="n"><div class="nm">웹 앱<span class="tag">로그인 후</span></div><div class="sb">글로벌 내비게이션 — 어느 화면에서든 3그룹 접근</div></div></div>
+    <div class="entry" id="entryLogin"><div class="n" data-phase="1"><div class="nm">구글 로그인<span class="uc">UC-01</span></div><div class="sb">OAuth · 스트리머/편집자 공통<span class="ob">1회</span> 약관 동의(이용약관 · 개인정보 수집 · 마케팅 선택)</div></div></div>
+    <div class="entry" id="entryHome"><div class="n" data-phase="1"><div class="nm">웹 앱<span class="tag">로그인 후</span></div><div class="sb">글로벌 내비게이션 — 어느 화면에서든 3그룹 접근</div></div></div>
     <div id="cols"></div>
   </div>
 </div>
@@ -142,7 +158,7 @@
 
 <script>
 const COLS = [
-  {n:"공개 웹", s:"비로그인 · 누구나 접근", c:[
+  {n:"공개 웹", p:3, s:"비로그인 · 누구나 접근", c:[
     {n:"랜딩 · 서비스 소개", scr:true, c:[
       {n:"핵심 가치", s:"방송이 끝나기 전에 클립이 올라간다"},
       {n:"기능 소개", s:"자동 하이라이트 · 멀티트랙 편집 · 원클릭 업로드"},
@@ -199,16 +215,16 @@ const COLS = [
     ]},
     {n:"핫키 하이라이트 마킹", u:"12·26", s:"앞뒤 구간 → 대시보드 카드 · 템플릿 지정 시 자동 업로드"},
   ]},
-  {n:"시청 · 모니터링", web:true, s:"글로벌 내비 1", c:[
+  {n:"시청 · 모니터링", web:true, p:1, s:"글로벌 내비 1", c:[
     {n:"홈 · 방송 목록", scr:true, s:"로그인 후 첫 화면", c:[
-      {n:"시작 가이드", ob:true, c:[
+      {n:"시작 가이드", ob:true, p:2, c:[
         {n:"스트리머 체크리스트", tag:"S", s:"채널 연동 → 플러그인 설치 → 구독 결제 → 첫 방송"},
         {n:"편집자 체크리스트", tag:"E", s:"스트리머 신청 → 승인 대기 → 첫 편집"},
       ]},
       {n:"라이브 목록", s:"진행 중 방송"},
       {n:"방송 상태 · 신규 카드 수", s:"마지막 확인 이후 증가분"},
-      {n:"VOD 목록", s:"60일 보관 · 종료 직후 준비 중 표시"},
-      {n:"검색 · 필터", s:"방송일 · 상태 · 담당 스트리머«E»"},
+      {n:"VOD 목록", p:2, s:"60일 보관 · 종료 직후 준비 중 표시"},
+      {n:"검색 · 필터", p:2, s:"방송일 · 상태 · 담당 스트리머«E»"},
       {n:"스트리머 찾기 · 신청", tag:"E", u:"05", s:"바로가기 — 검색·신청 후 관리는 협업 관리에서"},
     ]},
     {n:"라이브 대시보드", scr:true, s:"홈에서 방송 선택", c:[
@@ -225,7 +241,7 @@ const COLS = [
       {n:"하이라이트 카드 목록", u:"20", c:[
         {n:"자동 · 수동 구분"},
         {n:"감지 근거 · 생성 시각", s:"채팅량 급증 배수 등"},
-        {n:"처리 상태", s:"미처리 · 편집 중(누가) · 클립 완료 — 중복 작업 방지"},
+        {n:"처리 상태", p:2, s:"미처리 · 편집 중(누가) · 클립 완료 — 중복 작업 방지"},
         {n:"실시간 갱신"},
         {n:"만료 표시", s:"되감기 1시간 이탈"},
         {n:"카드 액션", u:"22·26", s:"시점 이동 / 편집기 진입 / 원클릭 업로드(템플릿 지정 시) / 숨김·무시"},
@@ -239,7 +255,7 @@ const COLS = [
       {n:"하이라이트 카드 목록", u:"20", s:"만료 카드 재활성화 · 편집기 진입 · 원클릭 업로드 · 숨김·무시"},
     ]},
   ]},
-  {n:"클립 제작 · 보관", web:true, s:"글로벌 내비 2", c:[
+  {n:"클립 제작 · 보관", web:true, p:1, s:"글로벌 내비 2", c:[
     {n:"클립 편집기", scr:true, u:"22", s:"컨텍스트 진입 — 카드 또는 보관함 편집본에서만", c:[
       {n:"타임라인", c:[
         {n:"구간 선택", s:"5초~3분"},
@@ -250,7 +266,7 @@ const COLS = [
         {n:"솔로 미리듣기 · 볼륨"},
         {n:"무음 트랙 자동 숨김"},
       ]},
-      {n:"자막 패널", c:[
+      {n:"자막 패널", p:2, c:[
         {n:"AI 자막 생성 · 수정"},
         {n:"모드 선택", s:"번인+CC / 번인 / CC"},
       ]},
@@ -259,7 +275,7 @@ const COLS = [
         {n:"장면 캡처 크롭", s:"위치 조정"},
       ]},
       {n:"미리보기", s:"브라우저 시뮬레이션"},
-      {n:"제목 추천", s:"자막 기반 후보"},
+      {n:"제목 추천", p:2, s:"자막 기반 후보"},
       {n:"자동 임시 저장", s:"이탈·새로고침 대비 · 편집본 저장과 별개"},
       {n:"완료 액션", c:[
         {n:"편집본 저장", u:"23"},
@@ -268,19 +284,19 @@ const COLS = [
         {n:"템플릿으로 저장", u:"24"},
       ]},
     ]},
-    {n:"보관함", scr:true, s:"영구 보관", c:[
+    {n:"보관함", scr:true, p:2, s:"영구 보관", c:[
       {n:"클립 목록", u:"27·28", s:"렌더 결과물 — 업로드 상태 · 삭제"},
       {n:"편집본 목록", u:"23·28", s:"편집 설정 — 재편집 · 삭제"},
       {n:"재출력 가능 여부", u:"23", s:"VOD 만료 시 불가 · 만료일 표시"},
       {n:"삭제 정책 안내", u:"28", s:"영구 삭제 · 유튜브 업로드본에는 영향 없음"},
-      {n:"검색 · 필터", s:"방송일 · 상태 · 제목"},
+      {n:"검색 · 필터", p:2, s:"방송일 · 상태 · 제목"},
     ]},
     {n:"템플릿 관리", scr:true, u:"24", c:[
       {n:"템플릿 목록", s:"저장 · 수정 · 삭제"},
       {n:"원클릭 지정", u:"26", s:"핫키/카드 자동 업로드에 사용할 템플릿 선택"},
     ]},
   ]},
-  {n:"운영 · 계정", web:true, s:"글로벌 내비 3", c:[
+  {n:"운영 · 계정", web:true, p:2, s:"글로벌 내비 3", c:[
     {n:"업로드 · 승인", scr:true, c:[
       {n:"업로드 상태", u:"27", c:[
         {n:"진행 · 결과"},
@@ -310,7 +326,7 @@ const COLS = [
         {n:"편집자별 활동 이력", s:"제작 클립 · 업로드 이력"},
       ]},
     ]},
-    {n:"설정", scr:true, c:[
+    {n:"설정", scr:true, p:1, c:[
       {n:"채널 연동", tag:"S", u:"02·03", ob:true, c:[
         {n:"방송 채널", u:"02", s:"치지직 / SOOP · 연동 · 해제"},
         {n:"유튜브 채널", u:"03", c:[
@@ -344,7 +360,7 @@ const COLS = [
       ]},
     ]},
   ]},
-  {n:"운영자 콘솔", s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계", c:[
+  {n:"운영자 콘솔", p:3, s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계", c:[
     {n:"스트리머 · 계정 관리"},
     {n:"시스템 모니터링", s:"송출 수신 · 렌더 큐 · 스토리지"},
     {n:"CS · 분쟁 대응"},
@@ -352,22 +368,42 @@ const COLS = [
   ]},
 ];
 
+/* ── 개발 단계 — ① 유스케이스가 단일 기준점, 여기선 UC 번호로 물려받는다 ── */
+const PHASES = {
+  1:{nm:"핵심 루프",   tag:"스트리머 혼자 방송 중에 클립을 올린다",
+     ucs:[1,2,3,4,11,12,13,14,18,20,22,25]},
+  2:{nm:"협업 · 자산", tag:"편집자를 붙이고 방송이 끝나도 쓴다",
+     ucs:[5,6,7,15,19,21,23,24,26,27,28,29,30]},
+  3:{nm:"상용화",      tag:"돈을 받고 모르는 사람이 가입해 쓴다",
+     ucs:[8,9,10,16,17,31,32]},
+};
+const phaseOfUC = n => Number(Object.keys(PHASES).find(p=>PHASES[p].ucs.includes(n)));
+/* 노드 단계: UC 배지가 있으면 그중 가장 이른 단계, 없으면 직접 지정한 값, 그것도 없으면 부모에서 물려받음 */
+function phaseOfNode(d, inherited){
+  if(d.u) return Math.min(...String(d.u).split("·").map(x=>phaseOfUC(Number(x))));
+  return d.p || inherited || 1;
+}
+
 function nodeHTML(d){
   return `<div class="nm">${d.n}`+
     (d.tag?`<span class="tag">${d.tag}</span>`:"")+
     (d.u?`<span class="uc">UC-${d.u}</span>`:"")+
     (d.ob?`<span class="ob">1회</span>`:"")+
-    (d.tbd?`<span class="tbd">TBD</span>`:"")+`</div>`+
+    (d.tbd?`<span class="tbd">TBD</span>`:"")+
+    (d.showPh?`<span class="ph">P${d.phase}</span>`:"")+`</div>`+
     (d.s?`<div class="sb">${d.s}</div>`:"");
 }
-function render(d, depth){
+function render(d, depth, inherited){
   const li = document.createElement("li");
   li.className = (depth===0?"head":"") + (d.scr?" scr":"") + (d.c?"":" leaf");
+  d.phase = phaseOfNode(d, inherited);
+  d.showPh = depth===0 || d.scr;
   const n = document.createElement("div"); n.className="n"; n.innerHTML = nodeHTML(d);
+  n.dataset.phase = d.phase;
   li.appendChild(n);
   if(d.c){
     const ul = document.createElement("ul");
-    d.c.forEach(ch=>ul.appendChild(render(ch, depth+1)));
+    d.c.forEach(ch=>ul.appendChild(render(ch, depth+1, d.phase)));
     li.appendChild(ul);
   }
   return li;
@@ -377,7 +413,7 @@ const headNodes = [];
 for(const c of COLS){
   const col = document.createElement("div"); col.className="col";
   const ul = document.createElement("ul");
-  const li = render(c, 0);
+  const li = render(c, 0, null);
   ul.appendChild(li); col.appendChild(ul); colsEl.appendChild(col);
   headNodes.push(li.querySelector(":scope > .n"));
 }
@@ -481,6 +517,32 @@ document.getElementById("btn100").addEventListener("click", ()=>{vs=1; applyView
 
 layoutAndWire();
 window.addEventListener("resize",()=>{clearTimeout(window.__t);window.__t=setTimeout(layoutAndWire,120);});
+
+/* ---------- 개발 단계 필터 (여러 개 동시 선택) ---------- */
+const phasesEl = document.getElementById("phases");
+const sel = new Set();
+for(const [no,ph] of Object.entries(PHASES)){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "pchip"; b.dataset.phase = no;
+  b.innerHTML = `<span class="pno">P${no}</span>${ph.nm}<span class="ptag">${ph.tag}</span>`;
+  phasesEl.appendChild(b);
+}
+phasesEl.insertAdjacentHTML("beforeend",
+  `<span class="phint">그 단계에 만드는 화면만 남습니다 · 여러 개 동시 선택 · 셋 다 켜면 전체</span>`);
+
+function applyPhase(){
+  const on = sel.size > 0;              /* 셋 다 켜면 걸러낼 게 없어 전체와 같아진다 */
+  inner.classList.toggle("pfilter", on);
+  document.querySelectorAll(".pchip").forEach(c=>c.classList.toggle("on", sel.has(c.dataset.phase)));
+  document.querySelectorAll(".n[data-phase]").forEach(n=>
+    n.classList.toggle("poff", on && !sel.has(n.dataset.phase)));
+}
+phasesEl.addEventListener("click", e=>{
+  const c = e.target.closest(".pchip"); if(!c) return;
+  sel.has(c.dataset.phase) ? sel.delete(c.dataset.phase) : sel.add(c.dataset.phase);
+  applyPhase();
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ sel.clear(); applyPhase(); } });
 </script>
 </body>
 </html>

@@ -94,12 +94,29 @@
             color:var(--sub);padding:0 6px}
   .uc .who{font-size:9px;border:1px solid #c6ccd4;background:#f3f5f8;
             color:#3a3f47;padding:0 6px}
+  .uc .ph{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 6px}
+
+  /* ── 개발 단계(phase) 필터 — 여러 개 동시 선택 가능 ── */
+  .phases{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .pchip{border:1.2px solid var(--ink);background:#fff;border-radius:3px;padding:1px 9px;
+         font-size:11px;cursor:pointer;display:flex;gap:5px;align-items:center;font-family:inherit}
+  .pchip .pno{font-family:var(--mono);font-size:9.5px;color:var(--sub)}
+  .pchip .ptag{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+  .pchip:hover{background:#f3f5f8}
+  .pchip.on{background:var(--ink);color:#fff}
+  .pchip.on .pno,.pchip.on .ptag{color:#c8ccd2}
+  .phint{font-size:10.5px;color:var(--faint);margin-left:2px}
+  #wrap.pfilter .uc.poff,#wrap.pfilter .actor.poff{opacity:.12}
+  #wrap.pfilter #wires path.poff,#wrap.pfilter #wires circle.poff{opacity:.06}
   #wrap.focus .uc{opacity:.25}
   #wrap.focus .uc.lit{opacity:1;box-shadow:0 0 0 1.6px var(--ink)}
   #wrap.focus .uc.pinned{box-shadow:0 0 0 2.4px var(--ink)}
   .subs{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px}
   .subs span{font-size:9.5px;border:1px solid #d3d7dd;background:#fff;
              padding:1px 6px;color:var(--sub)}
+  .subs span i{font-style:normal;font-family:var(--mono);font-size:8.5px;
+               background:var(--ink);color:#fff;padding:0 4px;margin-left:5px}
+  #wrap.pfilter .subs span.poff{opacity:.2}
 
   footer.notes{width:1860px;margin:26px 0 0;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px}
   .notebox{border:1px solid #d3d7dd;background:#fff;padding:8px 13px}
@@ -121,7 +138,8 @@
   <div id="inner">
     <header class="page">
       <h1>Use Case Diagram</h1>
-      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.1 — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
+      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.2 — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
+      <div class="phases" id="phases"></div>
     </header>
 
     <div id="wrap">
@@ -213,7 +231,10 @@ const GROUPS = {
   ]},
   edit:{title:"편집 · 업로드", items:[
     {id:22, name:"클립 편집", note:"카드 또는 보관함 편집본에서 진입 · 라이브/VOD 동일", actors:["S","E"], wide:true,
-      subs:["구간 선택 (5초~3분)","오디오 트랙 켜기/끄기","트랙 미리듣기·볼륨 (무음 트랙 자동 숨김)","웨이브폼 표시","AI 자막 + 직접 수정","자막 3모드 (번인+CC / 번인 / CC)","화면 비율 (가로·9:16·1:1·상하분할·크롭)","브라우저 미리보기 (서버 렌더 없음)","제목 추천 (자막 기반)"]},
+      subs:[["구간 선택 (5초~3분)",1],["오디오 트랙 켜기/끄기",1],["트랙 미리듣기·볼륨 (무음 트랙 자동 숨김)",1],
+            ["웨이브폼 표시",1],["AI 자막 + 직접 수정",2],["자막 3모드 (번인+CC / 번인 / CC)",2],
+            ["화면 비율 (가로·9:16·1:1·상하분할·크롭)",1],["브라우저 미리보기 (서버 렌더 없음)",1],
+            ["제목 추천 (자막 기반)",2]]},
     {id:23, name:"편집본 저장·불러오기·재출력", note:"재출력은 VOD 보관 60일 내", actors:["S","E"]},
     {id:24, name:"업로드 템플릿 관리", note:"저장 · 지정 · 수정 · 삭제", actors:["S","E"]},
     {id:25, name:"유튜브 업로드", note:"기본 비공개 · 제목·설명 확정 · CC 등록 — 권한 없으면 UC-29로 분기", actors:["S","E","Y"], perm:"편집자: 직접 업로드 권한"},
@@ -229,6 +250,17 @@ const GROUPS = {
   ]},
 };
 const COLUMNS = [["acc","live"],["auto","view"],["edit"],["bill"]];
+
+/* ── 개발 단계 — ①이 단일 기준점이고 ②·③은 UC 번호로 이 값을 물려받는다 ── */
+const PHASES = {
+  1:{nm:"핵심 루프",   tag:"스트리머 혼자 방송 중에 클립을 올린다",
+     ucs:[1,2,3,4,11,12,13,14,18,20,22,25]},
+  2:{nm:"협업 · 자산", tag:"편집자를 붙이고 방송이 끝나도 쓴다",
+     ucs:[5,6,7,15,19,21,23,24,26,27,28,29,30]},
+  3:{nm:"상용화",      tag:"돈을 받고 모르는 사람이 가입해 쓴다",
+     ucs:[8,9,10,16,17,31,32]},
+};
+const phaseOf = n => Number(Object.keys(PHASES).find(p=>PHASES[p].ucs.includes(n)));
 
 const wrap = document.getElementById("wrap");
 const svg  = document.getElementById("wires");
@@ -248,15 +280,18 @@ for(const col of COLUMNS){
     const grid = document.createElement("div"); grid.className="items";
     for(const it of g.items){
       const d = document.createElement("div");
-      d.className = "uc"+(it.wide?" wide":""); d.id = "uc-"+it.id; d.dataset.actors = it.actors.join(",");
+      d.className = "uc"+(it.wide?" wide":""); d.id = "uc-"+it.id;
+      d.dataset.actors = it.actors.join(","); d.dataset.phase = phaseOf(it.id);
       d.innerHTML =
         `<span class="name">${it.name}</span>`+
         (it.note?`<span class="note">${it.note}</span>`:"")+
         `<span class="badges"><span class="ucid">UC-${pad2(it.id)}</span>`+
+        `<span class="ph">P${phaseOf(it.id)}</span>`+
         it.actors.map(a=>`<span class="who">${ACTORS[a].name}</span>`).join("")+
         (it.perm?`<span class="perm">${it.perm}</span>`:"")+
         (it.auto?`<span class="auto">auto</span>`:"")+`</span>`+
-        (it.subs?`<div class="subs">${it.subs.map(s=>`<span>${s}</span>`).join("")}</div>`:"");
+        (it.subs?`<div class="subs">${it.subs.map(([t,ph])=>
+          `<span data-phase="${ph}">${t}${ph>1?`<i>P${ph}</i>`:""}</span>`).join("")}</div>`:"");
       grid.appendChild(d);
     }
     z.appendChild(grid); cd.appendChild(z);
@@ -308,6 +343,7 @@ function zoomCenter(factor){ zoomAt(factor, stage.clientWidth/2, stage.clientHei
 let drag = null, dragged = false;
 stage.addEventListener("mousedown", e=>{
   if(e.target.closest("#hud")) return;
+  if(e.target.closest(".pchip")) return;
   drag = {x:e.clientX, y:e.clientY, vx, vy}; dragged = false;
   stage.classList.add("grabbing");
 });
@@ -479,7 +515,50 @@ document.addEventListener("click",e=>{
   if(u){ setPin({kind:"uc", el:u}); return; }
   setPin(null);
 });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") setPin(null); });
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  setPin(null); sel.clear(); applyPhase();
+});
+
+/* ---------- 개발 단계 필터 (여러 개 동시 선택) ---------- */
+const phasesEl = document.getElementById("phases");
+const sel = new Set();
+for(const [no,ph] of Object.entries(PHASES)){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "pchip"; b.dataset.phase = no;
+  b.innerHTML = `<span class="pno">P${no}</span>${ph.nm}`
+    + `<span class="ptag">UC ${ph.ucs.length} · ${ph.tag}</span>`;
+  phasesEl.appendChild(b);
+}
+phasesEl.insertAdjacentHTML("beforeend",
+  `<span class="phint">그 단계에 만드는 것만 남습니다 · 여러 개 동시 선택 · 셋 다 켜면 전체</span>`);
+
+function applyPhase(){
+  const on = sel.size > 0;              /* 셋 다 켜면 걸러낼 게 없어 전체와 같아진다 */
+  wrap.classList.toggle("pfilter", on);
+  document.querySelectorAll(".pchip").forEach(c=>c.classList.toggle("on", sel.has(c.dataset.phase)));
+  const ucs = allUCs();
+  ucs.forEach(u=>u.classList.toggle("poff", on && !sel.has(u.dataset.phase)));
+  document.querySelectorAll(".subs span[data-phase]").forEach(sp=>
+    sp.classList.toggle("poff", on && !sel.has(sp.dataset.phase)));
+  const live = u => !u.classList.contains("poff");
+  document.querySelectorAll(".actor").forEach(a=>{
+    const code = a.id.replace("actor-","");
+    a.classList.toggle("poff", on && !ucs.some(u=>live(u) && u.dataset.actors.split(",").includes(code)));
+  });
+  svg.querySelectorAll("path,circle").forEach(w=>{
+    a: {
+      const keep = ucs.some(u=>live(u) && u.closest(".zone").dataset.key===w.dataset.zone
+        && u.dataset.actors.split(",").includes(w.dataset.actor));
+      w.classList.toggle("poff", on && !keep);
+    }
+  });
+}
+phasesEl.addEventListener("click", e=>{
+  const c = e.target.closest(".pchip"); if(!c) return;
+  sel.has(c.dataset.phase) ? sel.delete(c.dataset.phase) : sel.add(c.dataset.phase);
+  applyPhase();
+});
 
 function refresh(){ layoutActors(); drawWires(); showPinned(); }
 window.addEventListener("resize",()=>{
