@@ -11,19 +11,39 @@
     --mono:Consolas,"Cascadia Mono",monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
   body{
     background:var(--bg); color:var(--ink);
     font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
-    font-size:13px; line-height:1.4; padding:12px 18px 16px; min-width:1760px;
+    font-size:13px; line-height:1.4; overflow:hidden;
   }
-  header.page{max-width:1880px;margin:0 auto 12px}
+
+  /* ── 피그마식 캔버스: 드래그 이동 · Ctrl+휠 확대 ── */
+  #stage{position:fixed;inset:0;overflow:hidden;cursor:grab;user-select:none;
+         background-color:var(--bg);
+         background-image:radial-gradient(#dde2ea 1px, transparent 1px);
+         background-size:22px 22px}
+  #stage.grabbing{cursor:grabbing}
+  #inner{position:absolute;left:0;top:0;width:max-content;transform-origin:0 0;
+         padding:14px 18px 18px}
+
+  #hud{position:fixed;right:12px;bottom:12px;z-index:5;display:flex;gap:6px;align-items:center;
+       background:#fff;border:1px solid #d3d7dd;border-radius:6px;padding:4px 6px;
+       box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:11px;color:#3a3f47}
+  #hud button{font:inherit;border:1px solid #d3d7dd;background:#fff;border-radius:4px;
+              padding:1px 8px;cursor:pointer;color:inherit}
+  #hud button:hover{background:#f3f5f8}
+  #hud .pct{font-family:var(--mono);font-size:10px;min-width:42px;text-align:center}
+  #hud .tip{color:var(--faint);border-left:1px solid #e3e6ea;padding-left:7px;margin-left:2px}
+
+  header.page{width:1860px;margin:0 0 12px}
   h1{display:inline-block;background:var(--ink);color:#fff;font-size:20px;font-weight:800;
      letter-spacing:.01em;padding:4px 15px 5px}
   .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
   .meta b{color:var(--ink)}
 
-  #wrap{position:relative;max-width:1880px;margin:0 auto;display:flex;gap:26px;align-items:stretch;
-        min-height:calc(100vh - 104px)}
+  #wrap{position:relative;width:1860px;display:flex;gap:26px;align-items:stretch;
+        min-height:1180px}
   #wires{position:absolute;inset:0;pointer-events:none;z-index:1}
   #wires path,#wires circle{transition:opacity .18s ease, stroke-width .18s ease}
   #wrap.focus #wires path,#wrap.focus #wires circle{opacity:.05}
@@ -31,7 +51,7 @@
   #wrap.focus #wires circle.on{opacity:.95}
 
   aside{position:relative;flex:0 0 148px;z-index:2}
-  .actor{position:absolute;left:0;right:0;text-align:center;cursor:default;
+  .actor{position:absolute;left:0;right:0;text-align:center;cursor:pointer;
          transition:opacity .18s ease}
   .actor .fig{margin-bottom:4px}
   .actor .aname{font-weight:800;font-size:14px}
@@ -39,6 +59,7 @@
   .actor .adesc{font-size:10.5px;color:var(--sub);line-height:1.35;margin-top:3px}
   #wrap.focus .actor{opacity:.25}
   #wrap.focus .actor.lit{opacity:1}
+  .actor.pinned .aname{box-shadow:0 1.4px 0 var(--ink)}
 
   #boundary{flex:1;z-index:2;position:relative;border:1.5px dashed var(--faint);
             border-radius:4px;padding:26px 16px 16px;min-width:0;background:transparent;
@@ -54,12 +75,14 @@
         padding:15px 9px 9px;background:transparent;display:flex;flex-direction:column}
   .zone>h3{position:absolute;top:-9px;left:12px;background:var(--bg);
            border:1px solid var(--ink);padding:1px 9px;font-size:10.5px;font-weight:700;
-           letter-spacing:.03em;display:flex;gap:6px;align-items:center}
+           letter-spacing:.03em;display:flex;gap:6px;align-items:center;white-space:nowrap}
   .zone>h3 .cnt{font-family:var(--mono);font-weight:400;font-size:9px;color:var(--sub)}
-  .zone>h3 .autotag{font-family:var(--mono);font-size:8.5px;color:var(--sub);font-weight:400}
+  .zone .ztag{font-size:9px;color:var(--sub);line-height:1.3;margin:1px 3px 7px;
+              padding-left:7px;border-left:2px solid #d3d7dd}
   .items{flex:1;display:grid;grid-template-columns:1fr;grid-auto-rows:1fr;gap:7px;align-items:center}
   .uc{position:relative;background:#fff;border:1.2px solid var(--box-line);border-radius:6px;
       padding:6px 9px 5px;text-align:center;min-height:46px;max-height:150px;height:100%;
+      cursor:pointer;
       display:flex;flex-direction:column;justify-content:center;gap:1px;
       transition:opacity .18s ease, box-shadow .18s ease}
   .uc .name{font-weight:700;font-size:12.5px;line-height:1.2}
@@ -73,11 +96,12 @@
             color:#3a3f47;padding:0 6px}
   #wrap.focus .uc{opacity:.25}
   #wrap.focus .uc.lit{opacity:1;box-shadow:0 0 0 1.6px var(--ink)}
+  #wrap.focus .uc.pinned{box-shadow:0 0 0 2.4px var(--ink)}
   .subs{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px}
   .subs span{font-size:9.5px;border:1px solid #d3d7dd;background:#fff;
              padding:1px 6px;color:var(--sub)}
 
-  footer.notes{max-width:1880px;margin:28px auto 0;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px}
+  footer.notes{width:1860px;margin:26px 0 0;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px}
   .notebox{border:1px solid #d3d7dd;background:#fff;padding:8px 13px}
   .notebox h4{font-size:10.5px;letter-spacing:.05em;margin-bottom:4px;font-weight:800}
   .notebox li{margin-left:16px;font-size:11px;margin-bottom:2px;color:#3a3f47}
@@ -93,47 +117,59 @@
 </head>
 <body>
 
-<header class="page">
-  <h1>Use Case Diagram</h1>
-  <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.1 · 2026-07-23 (Codex 최종 검증 결함 0건) — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 마우스를 올리면 관련 선만 강조</div>
-</header>
+<div id="stage">
+  <div id="inner">
+    <header class="page">
+      <h1>Use Case Diagram</h1>
+      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.1 — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
+    </header>
 
-<div id="wrap">
-  <svg id="wires"></svg>
-  <aside id="side-left"></aside>
-  <section id="boundary">
-    <h2>PokeClip 시스템</h2>
-    <div class="zones" id="zones"></div>
-  </section>
-  <aside id="side-right"></aside>
+    <div id="wrap">
+      <svg id="wires"></svg>
+      <aside id="side-left"></aside>
+      <section id="boundary">
+        <h2>PokeClip 시스템</h2>
+        <div class="zones" id="zones"></div>
+      </section>
+      <aside id="side-right"></aside>
+    </div>
+
+    <footer class="notes">
+      <div class="notebox">
+        <h4>범례</h4>
+        <div class="lg"><span class="sline"></span> 액터 ↔ 역할 그룹 관여 (실선 · 방향 없음)</div>
+        <div class="lg"><span class="ubox"></span> 유스케이스 — [UC-번호] · 회색 배지 = 이 유스케이스의 참여 액터</div>
+        <div class="lg"><span class="dbox"></span> 역할 그룹 · 바깥 점선 = 시스템 경계</div>
+      </div>
+      <div class="notebox">
+        <h4>확정 사항</h4>
+        <ul>
+          <li>시스템 경계: <b>OBS 플러그인을 포함한 전체 제품</b> — 플러그인은 내부 구성요소</li>
+          <li>과금 주체: <b>스트리머 단독</b>(편집자 무료) · 편집자 접근: <b>신청형</b></li>
+          <li>클립 편집 하위 9기능은 UC-22 안에 표기 · 자동 기능(UC-13~17)은 시스템이 실행, 배지는 수혜자/데이터 제공자</li>
+          <li>include/extend 미사용 — 권한 부족 시 UC-25·26 → UC-29 분기는 비고로 명시</li>
+          <li>범위 외: 운영자(Admin) — ② IA에 위치만 표시, 유스케이스 상세는 별도 설계 · 목록 조회 화면(② IA) · 공개 전환 · 업로드 자동 재시도 알고리즘(④)</li>
+        </ul>
+      </div>
+      <div class="notebox">
+        <h4>미정 (TBD)</h4>
+        <ul>
+          <li>종량 과금 기준(방송 시간·렌더·STT 분량 등)<span class="tbd">TBD</span></li>
+          <li>스트리머 → 편집자 초대형 접근<span class="tbd">TBD</span></li>
+          <li>계정 삭제 시 클립·편집본·VOD 처리<span class="tbd">TBD</span></li>
+        </ul>
+      </div>
+    </footer>
+  </div>
 </div>
 
-<footer class="notes">
-  <div class="notebox">
-    <h4>범례</h4>
-    <div class="lg"><span class="sline"></span> 액터 ↔ 역할 그룹 관여 (실선 · 방향 없음)</div>
-    <div class="lg"><span class="ubox"></span> 유스케이스 — [UC-번호] · 회색 배지 = 이 유스케이스의 참여 액터</div>
-    <div class="lg"><span class="dbox"></span> 역할 그룹 · 바깥 점선 = 시스템 경계</div>
-  </div>
-  <div class="notebox">
-    <h4>확정 사항</h4>
-    <ul>
-      <li>시스템 경계: <b>OBS 플러그인을 포함한 전체 제품</b> — 플러그인은 내부 구성요소</li>
-      <li>과금 주체: <b>스트리머 단독</b>(편집자 무료) · 편집자 접근: <b>신청형</b></li>
-      <li>클립 편집 하위 9기능은 UC-22 안에 표기 · 자동 기능(UC-13~17)은 시스템이 실행, 배지는 수혜자/데이터 제공자</li>
-      <li>include/extend 미사용 — 권한 부족 시 UC-25·26 → UC-29 분기는 비고로 명시</li>
-      <li>범위 외: 운영자(Admin) — ② IA에 위치만 표시, 유스케이스 상세는 별도 설계 · 목록 조회 화면(② IA) · 공개 전환 · 업로드 자동 재시도 알고리즘(④)</li>
-    </ul>
-  </div>
-  <div class="notebox">
-    <h4>미정 (TBD)</h4>
-    <ul>
-      <li>종량 과금 기준(방송 시간·렌더·STT 분량 등)<span class="tbd">TBD</span></li>
-      <li>스트리머 → 편집자 초대형 접근<span class="tbd">TBD</span></li>
-      <li>계정 삭제 시 클립·편집본·VOD 처리<span class="tbd">TBD</span></li>
-    </ul>
-  </div>
-</footer>
+<div id="hud">
+  <button type="button" id="btnFit">맞춤</button>
+  <button type="button" id="btnOut">−</button>
+  <span class="pct" id="zoomPct">100%</span>
+  <button type="button" id="btnIn">＋</button>
+  <span class="tip">드래그 이동 · 휠 스크롤 · Ctrl+휠 확대</span>
+</div>
 
 <script>
 const ACTORS = {
@@ -207,7 +243,8 @@ for(const col of COLUMNS){
     const z = document.createElement("div"); z.className="zone";
     z.id = "zone-"+key; z.dataset.key = key;
     z.style.flexGrow = g.items.length + (g.items.some(i=>i.subs)?2:0);
-    z.innerHTML = `<h3>${g.title} <span class="cnt">${g.items.length}</span>${g.auto?'<span class="autotag">· 시스템이 실행 · 배지 = 수혜자/데이터 제공자 (실행 주체 아님)</span>':''}</h3>`;
+    z.innerHTML = `<h3>${g.title} <span class="cnt">${g.items.length}</span></h3>`
+      + (g.auto?'<div class="ztag">시스템이 실행 · 배지는 수혜자/데이터 제공자이며 실행 주체가 아님</div>':'');
     const grid = document.createElement("div"); grid.className="items";
     for(const it of g.items){
       const d = document.createElement("div");
@@ -240,10 +277,65 @@ for(const [code,a] of Object.entries(ACTORS)){
   document.getElementById(a.side==="left"?"side-left":"side-right").appendChild(el);
 }
 
+/* ---------- 캔버스 이동·확대 ---------- */
+const stage = document.getElementById("stage");
+const inner = document.getElementById("inner");
+const zoomPct = document.getElementById("zoomPct");
+const ZMIN = 0.08, ZMAX = 3;
+let vx = 0, vy = 0, vs = 1;
+
+function applyView(){
+  inner.style.transform = `translate(${vx}px, ${vy}px) scale(${vs})`;
+  zoomPct.textContent = Math.round(vs*100)+"%";
+}
+function fit(){
+  const iw = inner.scrollWidth, ih = inner.scrollHeight;
+  const aw = stage.clientWidth, ah = stage.clientHeight;
+  if(!iw || !ih || !aw || !ah) return;
+  vs = Math.max(ZMIN, Math.min(Math.min(aw/iw, ah/ih)*0.98, ZMAX));
+  vx = (aw - iw*vs)/2; vy = (ah - ih*vs)/2;
+  applyView();
+}
+function zoomAt(factor, cx, cy){
+  const next = Math.max(ZMIN, Math.min(vs*factor, ZMAX));
+  if(next === vs) return;
+  vx = cx - (cx - vx) * (next/vs);
+  vy = cy - (cy - vy) * (next/vs);
+  vs = next; applyView();
+}
+function zoomCenter(factor){ zoomAt(factor, stage.clientWidth/2, stage.clientHeight/2); }
+
+let drag = null, dragged = false;
+stage.addEventListener("mousedown", e=>{
+  if(e.target.closest("#hud")) return;
+  drag = {x:e.clientX, y:e.clientY, vx, vy}; dragged = false;
+  stage.classList.add("grabbing");
+});
+window.addEventListener("mousemove", e=>{
+  if(!drag) return;
+  const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+  if(Math.abs(dx) > 3 || Math.abs(dy) > 3) dragged = true;
+  vx = drag.vx+dx; vy = drag.vy+dy; applyView();
+});
+window.addEventListener("mouseup", ()=>{ drag = null; stage.classList.remove("grabbing"); });
+stage.addEventListener("contextmenu", e=>e.preventDefault());
+stage.addEventListener("wheel", e=>{
+  e.preventDefault();
+  const r = stage.getBoundingClientRect();
+  if(e.ctrlKey) zoomAt(Math.exp(-e.deltaY*0.0016), e.clientX-r.left, e.clientY-r.top);
+  else { vx -= e.deltaX; vy -= e.deltaY; applyView(); }
+}, {passive:false});
+
+document.getElementById("btnFit").addEventListener("click", fit);
+document.getElementById("btnIn").addEventListener("click", ()=>zoomCenter(1.25));
+document.getElementById("btnOut").addEventListener("click", ()=>zoomCenter(1/1.25));
+
 /* ---------- geometry ---------- */
+/* 캔버스에 scale이 걸려 있으므로 화면 좌표를 배율로 되돌린다 */
 const rel = el => {
   const w = wrap.getBoundingClientRect(), r = el.getBoundingClientRect();
-  return {x:r.left-w.left, y:r.top-w.top, w:r.width, h:r.height, cy:r.top-w.top+r.height/2};
+  return {x:(r.left-w.left)/vs, y:(r.top-w.top)/vs, w:r.width/vs, h:r.height/vs,
+          cy:(r.top-w.top+r.height/2)/vs};
 };
 const allUCs = () => [...document.querySelectorAll(".uc")];
 
@@ -325,11 +417,13 @@ function drawWires(){
   }
 }
 
-/* ---------- hover focus ---------- */
+/* ---------- 강조: 마우스 오버는 미리보기 · 클릭은 고정 ---------- */
+let pinned = null;   /* {kind:"actor",code} | {kind:"uc",el} */
+
 function clearFocus(){
   wrap.classList.remove("focus");
   svg.querySelectorAll(".on").forEach(p=>p.classList.remove("on"));
-  document.querySelectorAll(".lit").forEach(el=>el.classList.remove("lit"));
+  document.querySelectorAll(".lit,.pinned").forEach(el=>el.classList.remove("lit","pinned"));
 }
 function focusActor(code){
   wrap.classList.add("focus");
@@ -345,19 +439,55 @@ function focusUC(u){
   allUCs().forEach(x=>x.classList.toggle("lit", x===u));
   document.querySelectorAll(".actor").forEach(a=>a.classList.toggle("lit", codes.includes(a.id.replace("actor-",""))));
 }
+function showPinned(){
+  if(!pinned) return;
+  if(pinned.kind==="actor"){
+    focusActor(pinned.code);
+    document.getElementById("actor-"+pinned.code).classList.add("pinned");
+  } else {
+    focusUC(pinned.el);
+    pinned.el.classList.add("pinned");
+  }
+}
+function setPin(next){
+  const same = pinned && next && pinned.kind===next.kind &&
+    (next.kind==="actor" ? pinned.code===next.code : pinned.el===next.el);
+  pinned = same ? null : next;
+  clearFocus();
+  showPinned();
+}
+
 for(const [code] of Object.entries(ACTORS)){
-  const el=document.getElementById("actor-"+code);
-  el.addEventListener("mouseenter",()=>focusActor(code));
-  el.addEventListener("mouseleave",clearFocus);
+  const el = document.getElementById("actor-"+code);
+  el.addEventListener("mouseenter",()=>{ if(!pinned) focusActor(code); });
+  el.addEventListener("mouseleave",()=>{ if(!pinned) clearFocus(); });
 }
 document.addEventListener("mouseover",e=>{
+  if(pinned) return;
   const u=e.target.closest(".uc"); if(u) focusUC(u);
 });
-document.addEventListener("mouseout",e=>{ if(e.target.closest(".uc")) clearFocus(); });
+document.addEventListener("mouseout",e=>{
+  if(pinned) return;
+  if(e.target.closest(".uc")) clearFocus();
+});
+document.addEventListener("click",e=>{
+  if(dragged){ dragged = false; return; }   /* 화면을 끌었으면 클릭으로 보지 않는다 */
+  if(e.target.closest("#hud")) return;
+  const a = e.target.closest(".actor");
+  if(a){ setPin({kind:"actor", code:a.id.replace("actor-","")}); return; }
+  const u = e.target.closest(".uc");
+  if(u){ setPin({kind:"uc", el:u}); return; }
+  setPin(null);
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") setPin(null); });
 
-function refresh(){ layoutActors(); drawWires(); }
-window.addEventListener("resize",()=>{clearTimeout(window.__t);window.__t=setTimeout(refresh,120);});
+function refresh(){ layoutActors(); drawWires(); showPinned(); }
+window.addEventListener("resize",()=>{
+  clearTimeout(window.__t);
+  window.__t = setTimeout(()=>{ refresh(); fit(); }, 120);
+});
 refresh();
+fit();
 </script>
 </body>
 </html>

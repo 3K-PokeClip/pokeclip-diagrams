@@ -30,7 +30,7 @@
   #hud .pct{font-family:var(--mono);font-size:10px;min-width:42px;text-align:center}
   #hud .tip{color:var(--faint);border-left:1px solid #e3e6ea;padding-left:7px;margin-left:2px}
 
-  header.page{width:1900px;margin:0 0 10px}
+  header.page{width:1920px;margin:0 0 10px}
   h1{display:inline-block;background:var(--ink);color:#fff;font-size:20px;font-weight:800;
      letter-spacing:.01em;padding:4px 15px 5px}
   .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
@@ -43,7 +43,7 @@
   .fchip.act{background:var(--ink);color:#fff}
   .fchip.act .fno{color:#c8ccd2}
 
-  #wrap{position:relative;width:1900px;height:1085px}
+  #wrap{position:relative;width:1920px;height:1085px}
   #wires{position:absolute;inset:0;z-index:1;pointer-events:none}
   #wires path{fill:none;stroke:var(--ink);stroke-width:1.15;opacity:.5;stroke-linejoin:round;
               transition:opacity .18s ease, stroke-width .18s ease}
@@ -94,7 +94,8 @@
   <div id="inner">
     <header class="page">
       <h1>Service Architecture</h1>
-      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.0 — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · 큐·DB·프로토콜 등 기술 구조는 ④ 시스템 아키텍처로</div>
+      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.1 — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · 큐·DB·프로토콜 등 기술 구조는 ④ 시스템 아키텍처로<br>
+      선이 <b>묶음 테두리</b>에 닿으면 그 묶음에 <b>관여</b>한다는 뜻이고(웹 앱처럼 범위가 넓을 때), <b>블록</b>에 닿으면 그 블록과 <b>직접</b> 주고받는다는 뜻입니다 · 빗금 배경 = 저장소 · 블록·흐름 칩을 클릭하면 관련 요소만 남습니다</div>
       <div class="flows" id="flows"></div>
     </header>
     <div id="wrap">
@@ -113,7 +114,8 @@
 
 <script>
 /* ===== 좌표 체계 ===== */
-const BX = 182, BY = 0, BW = 1520, BH = 1080;          /* 시스템 경계 */
+const BX = 206, BY = 0, BW = 1520, BH = 1080;          /* 시스템 경계 */
+const ASIDE_R = 1748;                                   /* 외부 시스템 열 */
 const BANDX = BX + 30, BANDW = 1460;                    /* 묶음(band) 박스 */
 const COL = [50, 342, 634, 926, 1218].map(x => BX + x); /* 5개 열 */
 const CW = 250, NH = 100;                               /* 블록 크기 */
@@ -234,7 +236,7 @@ for(const s of SIDES){
   const el = document.createElement("div");
   el.className = "node " + (s.s==="L"?"face":"ext") + (s.ghost?" ghost":"");
   el.id = s.id; el.dataset.node = s.id;
-  Object.assign(el.style,{left:(s.s==="L"?0:1728)+"px",top:s.y+"px",width:"156px"});
+  Object.assign(el.style,{left:(s.s==="L"?0:ASIDE_R)+"px",top:s.y+"px",width:"156px"});
   el.innerHTML = `<div class="nm">${s.nm}</div><div class="st">${s.st}</div><div class="nt">${s.nt}</div>`;
   wrap.appendChild(el);
 }
@@ -257,11 +259,13 @@ const pt = (x,y) => ({x,y});
 
 /* 세로 채널(열 사이 빈 통로) · 가로 채널(묶음 사이 빈 통로) */
 const GX = {c12:COL[0]+CW+21, c12b:COL[0]+CW+7, c23:COL[1]+CW+21, c23b:COL[1]+CW+7,
-            c34:COL[2]+CW+21, c34b:COL[2]+CW+14, c34c:COL[2]+CW+28,
+            c34:COL[2]+CW+21, c34b:COL[2]+CW+14, c34c:COL[2]+CW+28, c34d:COL[2]+CW+35,
             c45:COL[3]+CW+21, c45b:COL[3]+CW+28,
-            bandR:BANDX+BANDW+15, boundL:BX+15, boundL2:BX+22};
-const GY = {rtAr:305, arMk1:471, arMk2:479, arMk3:487, mkRow:628, mkGap:760, mkCm:769,
-            cmRow:918, low1:1036, low2:1048, low3:1060, bottom:1070};
+            bandR:BANDX+BANDW+15, outR1:BX+BW+8, outR2:BX+BW+15,
+            boundL:BX+15, boundL2:BX+22, boundL3:BX+30};
+const GY = {rtRowGap:164, rtAr:305, arMk1:471, arMk2:479, arMk3:487, mkTop:510, mkRow:628,
+            mkGap:760, mkCm:769, cmTop:797, cmRow:918, cmLow:1030,
+            low1:1036, low2:1048, low3:1060, bottom:1070};
 
 /* ===== 연결 ===== */
 const EDGES = [
@@ -283,17 +287,23 @@ const EDGES = [
   /* ② 제작 */
   {f:2, l:"카드에서 편집 진입", p:[P("rt-card","r",20), pt(GX.c34, box("rt-card").cy+20),
         pt(GX.c34, GY.arMk1), pt(box("mk-edit").cx-65, GY.arMk1), P("mk-edit","t",-65)]},
-  {f:2, l:"구간 소스 (라이브)", p:[P("rt-buffer","l",-20), pt(GX.c12, box("rt-buffer").cy-20),
+  /* 아래 둘은 진입 경로가 아니라 편집기가 읽는 원본 미디어 — 진입은 카드/보관함에서만(② 제약) */
+  {f:2, l:"구간 원본 (라이브)", p:[P("rt-buffer","l",-20), pt(GX.c12, box("rt-buffer").cy-20),
         pt(GX.c12, GY.arMk3), pt(box("mk-edit").cx+35, GY.arMk3), P("mk-edit","t",35)]},
-  {f:2, l:"VOD에서 진입", p:[P("ar-vod","l",20), pt(GX.c23, box("ar-vod").cy+20),
+  {f:2, l:"구간 원본 (VOD)", p:[P("ar-vod","l",20), pt(GX.c23, box("ar-vod").cy+20),
         pt(GX.c23, GY.arMk2), pt(box("mk-edit").cx, GY.arMk2), P("mk-edit","t")]},
   {f:2, l:"자막 · 제목 후보", both:true, p:[P("mk-edit","b"), P("mk-stt","t")]},
   {f:2, p:[P("mk-edit","r"), P("mk-render","l")]},
   {f:2, p:[P("mk-render","r"), P("mk-store","l")]},
   {f:2, p:[P("mk-store","r"), P("mk-upload","l")]},
   {f:2, l:"원클릭 지정", p:[P("mk-tpl","t"), P("mk-upload","b")]},
-  {f:2, l:"원클릭 — 편집 화면 없이", p:[P("rt-card","r",-20), pt(GX.c34-14, box("rt-card").cy-20),
+  {f:2, l:"원클릭 — 카드 액션에서", p:[P("rt-card","r",-20), pt(GX.c34-14, box("rt-card").cy-20),
         pt(GX.c34-14, box("mk-upload").cy+20), P("mk-upload","l",20)]},
+  {f:2, l:"원클릭 — 핫키에서 (카드 화면 거치지 않음)", p:[P("rt-detect","r",30), pt(GX.c23b, box("rt-detect").cy+30),
+        pt(GX.c23b, GY.arMk3), pt(GX.c34c, GY.arMk3), pt(GX.c34c, box("mk-upload").cy-25),
+        P("mk-upload","l",-25)]},
+  {f:2, l:"편집본 불러오기 · 재편집", p:[P("mk-store","t"), pt(box("mk-store").cx, GY.mkTop),
+        pt(box("mk-edit").cx-35, GY.mkTop), P("mk-edit","t",-35)]},
 
   /* ④ 권한 */
   {f:4, l:"권한 부족 시 대기 → 승인 후 재개", both:true, p:[P("mk-upload","r"), P("mk-approve","l")]},
@@ -305,8 +315,16 @@ const EDGES = [
         pt(GX.c34c, GY.mkGap), pt(GX.c34c, GY.cmRow), pt(box("cm-noti").cx+59, GY.cmRow),
         P("cm-noti","t",59)]},
 
+  /* UC-16 이벤트 발송 — 나머지 세 이벤트도 각자 발생한 흐름으로 알림에 닿는다 */
+  {f:1, l:"방송 시작", p:[P("rt-ingest","l"), pt(GX.boundL3, box("rt-ingest").cy),
+        pt(GX.boundL3, box("cm-noti").cy), P("cm-noti","l")]},
+  {f:5, l:"결제 실패", p:[P("cm-bill","b",40), pt(box("cm-bill").cx+40, GY.cmLow),
+        pt(box("cm-noti").cx, GY.cmLow), P("cm-noti","b")]},
+  {f:3, l:"VOD 만료 임박", p:[P("ar-vod","r",25), pt(GX.c34d, box("ar-vod").cy+25),
+        pt(GX.c34d, box("cm-noti").cy+24), P("cm-noti","r",24)]},
+
   /* ⑤ 과금 — 계측 대상·기준은 ①에서 TBD */
-  {f:5, l:"사용량 계측 (대상 TBD)", p:[P("rt-ingest","l"), pt(GX.boundL, box("rt-ingest").cy),
+  {f:5, l:"사용량 계측 (대상 TBD)", p:[P("rt-ingest","l",20), pt(GX.boundL, box("rt-ingest").cy+20),
         pt(GX.boundL, GY.low3), pt(box("cm-bill").cx, GY.low3), P("cm-bill","b")]},
   {f:5, l:"사용량 계측 (대상 TBD)", p:[P("mk-render","r",20), pt(GX.c23b, box("mk-render").cy+20),
         pt(GX.c23b, GY.low2), pt(box("cm-bill").cx-13, GY.low2), P("cm-bill","b",-13)]},
@@ -321,18 +339,25 @@ const EDGES = [
         pt(GX.boundL2, box("rt-chat").cy), P("rt-chat","l")]},
 
   /* ⓪ 접점 — 액터에서 묶음 테두리로 (①과 같은 2단 표기: 개별 블록이 아니라 묶음에 건다) */
-  {f:0, ends:["ac-public","band-cm"],
-   p:[P("ac-public","r"), pt(168, box("ac-public").cy), pt(168, bandY("cm")+130), pt(BANDX, bandY("cm")+130)]},
-  {f:0, ends:["ac-plugin","band-rt"],
-   p:[P("ac-plugin","r"), pt(162, box("ac-plugin").cy), pt(162, bandY("rt")+130), pt(BANDX, bandY("rt")+130)]},
+  /* 공개 웹·OBS 플러그인은 닿는 블록이 좁아 블록 단위로, 웹 앱은 넓어 묶음 단위로 건다 */
+  {f:0, p:[P("ac-public","r",-6), pt(175, box("ac-public").cy-6), pt(175, box("cm-public").cy),
+        P("cm-public","l")]},
+  {f:0, p:[P("ac-public","r",6),  pt(180, box("ac-public").cy+6), pt(180, GY.cmTop),
+        pt(box("cm-help").cx, GY.cmTop), P("cm-help","t")]},
+  {f:0, p:[P("ac-plugin","r",-6), pt(165, box("ac-plugin").cy-6), pt(165, box("rt-ingest").cy-20),
+        P("rt-ingest","l",-20)]},
+  {f:0, p:[P("ac-plugin","r",6),  pt(170, box("ac-plugin").cy+6), pt(170, GY.rtRowGap),
+        pt(box("rt-detect").cx, GY.rtRowGap), P("rt-detect","t")]},
   {f:0, ends:["ac-web","band-rt"],
-   p:[P("ac-web","r",-6), pt(176, box("ac-web").cy-6), pt(176, bandY("rt")+150), pt(BANDX, bandY("rt")+150)]},
+   p:[P("ac-web","r",-9), pt(185, box("ac-web").cy-9), pt(185, bandY("rt")+150), pt(BANDX, bandY("rt")+150)]},
+  {f:0, ends:["ac-web","band-ar"],
+   p:[P("ac-web","r",-3), pt(190, box("ac-web").cy-3), pt(190, bandY("ar")+72),  pt(BANDX, bandY("ar")+72)]},
   {f:0, ends:["ac-web","band-mk"],
-   p:[P("ac-web","r",0),  pt(172, box("ac-web").cy),   pt(172, bandY("mk")+110), pt(BANDX, bandY("mk")+110)]},
+   p:[P("ac-web","r",3),  pt(195, box("ac-web").cy+3), pt(195, bandY("mk")+110), pt(BANDX, bandY("mk")+110)]},
   {f:0, ends:["ac-web","band-cm"],
-   p:[P("ac-web","r",6),  pt(180, box("ac-web").cy+6), pt(180, bandY("cm")+106), pt(BANDX, bandY("cm")+106)]},
+   p:[P("ac-web","r",9),  pt(200, box("ac-web").cy+9), pt(200, bandY("cm")+106), pt(BANDX, bandY("cm")+106)]},
   {f:0, ends:["ac-console","boundary"],
-   p:[P("ac-console","r"), pt(156, box("ac-console").cy), pt(156, 1000), pt(BX, 1000)]},
+   p:[P("ac-console","r"), pt(160, box("ac-console").cy), pt(160, 1000), pt(BX, 1000)]},
 
   /* ⓪ 외부 시스템 — 블록에 직접 */
   {f:0, both:true, p:[P("rt-chat","b"), pt(box("rt-chat").cx, GY.rtAr),
@@ -342,6 +367,10 @@ const EDGES = [
   {f:0, both:true, p:[P("cm-auth","r",-15), pt(GX.c45, box("cm-auth").cy-15),
         pt(GX.c45, GY.mkCm), pt(GX.bandR, GY.mkCm), P("ex-google","l")]},
   {f:0, both:true, p:[P("cm-bill","r"), pt(GX.bandR, box("cm-bill").cy), P("ex-pg","l")]},
+  {f:0, both:true, l:"방송 채널 연동·해제", p:[P("cm-link","r",30), pt(GX.outR2, box("cm-link").cy+30),
+        pt(GX.outR2, box("ex-chat").cy-17), P("ex-chat","l",-17)]},
+  {f:0, both:true, l:"유튜브 채널 연동·해제", p:[P("cm-link","r",-30), pt(GX.outR1, box("cm-link").cy-30),
+        pt(GX.outR1, box("ex-yt").cy-17), P("ex-yt","l",-17)]},
 ];
 
 /* ===== 배선 그리기 ===== */
