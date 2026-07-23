@@ -74,13 +74,16 @@
 
   /* ── 개발 단계(phase) 필터 — 여러 개 동시 선택 가능 ── */
   .phases{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-  .pchip{border:1.2px solid var(--ink);background:#fff;border-radius:3px;padding:1px 9px;
-         font-size:11px;cursor:pointer;display:flex;gap:5px;align-items:center;font-family:inherit}
-  .pchip .pno{font-family:var(--mono);font-size:9.5px;color:var(--sub)}
-  .pchip .ptag{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+  .pchip{border:1.4px solid var(--ink);background:#fff;border-radius:6px;padding:7px 14px 7px 9px;
+         font-size:13px;font-weight:700;cursor:pointer;display:flex;gap:8px;align-items:center;
+         font-family:inherit;line-height:1.15}
+  .pchip .pno{font-family:var(--mono);font-size:11px;font-weight:700;background:var(--ink);color:#fff;
+              border-radius:4px;padding:2px 7px}
+  .pchip .ptag{font-family:inherit;font-size:10.5px;font-weight:400;color:var(--sub)}
+  .pchip.on .pno{background:#fff;color:var(--ink)}
   .pchip:hover{background:#f3f5f8}
   .pchip.on{background:var(--ink);color:#fff}
-  .pchip.on .pno,.pchip.on .ptag{color:#c8ccd2}
+  .pchip.on .ptag{color:#c8ccd2}
   .phint{font-size:10.5px;color:var(--faint);margin-left:2px}
   #inner.pfilter .n{transition:opacity .18s ease}
   #inner.pfilter .n.poff{opacity:.12}
@@ -107,7 +110,7 @@
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.7 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.8 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
   <div class="phases" id="phases"></div>
 </header>
 
@@ -525,7 +528,8 @@ const sel = new Set();
 for(const [no,ph] of Object.entries(PHASES)){
   const b = document.createElement("button");
   b.type = "button"; b.className = "pchip"; b.dataset.phase = no;
-  b.innerHTML = `<span class="pno">P${no}</span>${ph.nm}<span class="ptag">${ph.tag}</span>`;
+  b.title = ph.tag;
+  b.innerHTML = `<span class="pno">P${no}</span>${ph.nm}<span class="ptag">UC ${ph.ucs.length}</span>`;
   phasesEl.appendChild(b);
 }
 phasesEl.insertAdjacentHTML("beforeend",
