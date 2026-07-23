@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokeClip — 부록 B · 추적성 표</title>
+<style>
+  :root{--bg:#fbfbfc;--ink:#16181c;--sub:#5c626c;--faint:#9aa1ab;--line:#dde2ea;
+        --mono:Consolas,"Cascadia Mono",monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+       font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+       font-size:13.5px;line-height:1.55;padding:40px 28px 80px;
+       display:flex;flex-direction:column;align-items:center}
+  .page{width:100%;max-width:1360px}
+  h1{display:inline-block;background:var(--ink);color:#fff;font-size:21px;font-weight:800;
+     padding:5px 16px 6px}
+  .meta{margin-top:9px;color:var(--sub);font-size:12px;max-width:960px}
+  .meta b{color:var(--ink)}
+  h2{font-size:15px;margin:30px 0 10px;padding-bottom:5px;border-bottom:1.5px solid var(--ink)}
+  h2 .sub{font-weight:400;font-size:11.5px;color:var(--sub);margin-left:8px}
+  .wrapx{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+  table{border-collapse:collapse;width:100%;min-width:1180px;font-size:11.8px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#f4f6f8;font-weight:700;font-size:11.3px;white-space:nowrap;
+     border-bottom:1.5px solid var(--ink)}
+  tr:last-child td{border-bottom:none}
+  td.id{font-family:var(--mono);font-size:10.5px;font-weight:700;white-space:nowrap}
+  td.nm{font-weight:700;white-space:nowrap}
+  .p{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 5px;
+     margin-left:5px}
+  .ev{font-family:var(--mono);font-size:10.5px}
+  .sys{color:var(--sub);font-style:italic}
+  code{font-family:var(--mono);font-size:10.5px;background:#f1f3f6;padding:1px 4px;border-radius:3px}
+  .note{margin-top:10px;font-size:11.5px;color:var(--sub)}
+  .foot{margin-top:44px;font-size:11px;color:var(--faint);border-top:1px solid var(--line);
+        padding-top:14px}
+  a{color:inherit}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#16181c;--ink:#f0f2f5;--sub:#a8b0ba;--faint:#6b7280;--line:#2c3138}
+    .wrapx{background:#1c1f24}th{background:#22262c}code{background:#22262c}
+    .p{color:#16181c}
+  }
+  :root[data-theme="dark"]{--bg:#16181c;--ink:#f0f2f5;--sub:#a8b0ba;--faint:#6b7280;--line:#2c3138}
+  :root[data-theme="light"]{--bg:#fbfbfc;--ink:#16181c;--sub:#5c626c;--faint:#9aa1ab;--line:#dde2ea}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>부록 B · 추적성 표</h1>
+<div class="meta">유스케이스 32개 각각이 <b>② 어느 화면</b>에 나타나고, <b>③ 어느 책임(Capability)</b>이 맡고, <b>④ 어느 실행 단위</b>가 처리하며, <b>어느 저장소·이벤트</b>를 지나는지 한 줄로 잇는다.
+문서 네 개가 같은 것을 다르게 부르면 여기서 걸린다. <span class="sys">기울임</span> = 화면 없는 시스템 자동 UC(결과물로만 표출).</div>
+
+<h2>UC → 화면 → 책임 → 실행 단위 → 저장소·이벤트</h2>
+<div class="wrapx">
+<table>
+<thead><tr>
+  <th>UC</th><th>이름</th><th>② IA 화면</th><th>③ 서비스 책임</th><th>④ 실행 단위</th><th>저장소 · 이벤트</th>
+</tr></thead>
+<tbody>
+<tr><td class="id">UC-01<span class="p">P1</span></td><td class="nm">구글 로그인</td><td>진입(구글 로그인) · 설정 › 계정</td><td>계정 · 인증</td><td>웹 → Core</td><td>PostgreSQL · Redis 세션 / Google OIDC</td></tr>
+<tr><td class="id">UC-02<span class="p">P1</span></td><td class="nm">방송 채널 연동</td><td>채널·협업자 › 채널 연동 › 방송 채널</td><td>채널 연동 <span class="ev">(ChannelToken)</span></td><td>Core</td><td>PostgreSQL / 치지직·SOOP</td></tr>
+<tr><td class="id">UC-03<span class="p">P1</span></td><td class="nm">유튜브 채널 연동</td><td>채널·협업자 › 채널 연동 › 유튜브 채널</td><td>채널 연동 <span class="ev">(ChannelToken)</span></td><td>Core</td><td>PostgreSQL(refresh token KMS) / YouTube OAuth</td></tr>
+<tr><td class="id">UC-04<span class="p">P1</span></td><td class="nm">플러그인 설치·연결</td><td>공개 웹 › 다운로드 · 설정 › 플러그인 · 플러그인 › 연결 설정</td><td>공개 콘텐츠 · 송출 수신</td><td>플러그인 · Core · 미디어</td><td>PostgreSQL(StreamKey)</td></tr>
+<tr><td class="id">UC-05<span class="p">P2</span></td><td class="nm">스트리머 접근 요청</td><td>채널·협업자 › 스트리머 접근</td><td>협업 · 권한 <span class="ev">(EditorGrant)</span></td><td>Core</td><td>PostgreSQL</td></tr>
+<tr><td class="id">UC-06<span class="p">P2</span></td><td class="nm">협업 종료</td><td>채널·협업자 › 스트리머 접근 › 협업 종료</td><td>협업 · 권한 <span class="ev">(EditorGrant)</span></td><td>Core</td><td>PostgreSQL</td></tr>
+<tr><td class="id">UC-07<span class="p">P2</span></td><td class="nm">편집자 승인·권한 관리</td><td>채널·협업자 › 편집자 관리</td><td>협업 · 권한 <span class="ev">(EditorGrant)</span> · 이력 기록</td><td>Core</td><td>PostgreSQL</td></tr>
+<tr><td class="id">UC-08<span class="p">P3</span></td><td class="nm">알림 설정</td><td>설정 › 알림 설정</td><td>알림</td><td>Core</td><td>PostgreSQL</td></tr>
+<tr><td class="id">UC-09<span class="p">P3</span></td><td class="nm">계정 삭제</td><td>설정 › 계정 › 계정 삭제</td><td>계정 · 인증</td><td>Core</td><td>PostgreSQL(보관물 처리 TBD)</td></tr>
+<tr><td class="id">UC-10<span class="p">P3</span></td><td class="nm">문의·지원</td><td>공개 웹 › 도움말 · 설정 › 도움말·문의</td><td>문의 · 지원</td><td>Core</td><td>PostgreSQL</td></tr>
+<tr><td class="id">UC-11<span class="p">P1</span></td><td class="nm">동시 송출</td><td>플러그인 › 동시 송출 · 상태 표시</td><td>송출 수신 · 트랙 분리 <span class="ev">(Broadcast)</span> · 되감기 버퍼</td><td>플러그인 →(SRT) 미디어 · →(REST) Core</td><td>S3 CMAF · <span class="ev">BroadcastStarted / Stopped</span></td></tr>
+<tr><td class="id">UC-12<span class="p">P1</span></td><td class="nm">OBS 플러그인 핫키 마킹</td><td>플러그인 › 핫키 마킹 → 대시보드 카드</td><td>카드 · 타임라인 <span class="ev">(HighlightCard)</span></td><td>플러그인 →(REST) Core</td><td>PostgreSQL + Outbox</td></tr>
+<tr><td class="id sys">UC-13<span class="p">P1</span></td><td class="nm sys">채팅 자동 수집</td><td class="sys">화면 없음 — 그래프·아카이브로 표출</td><td>채팅 수집</td><td>채팅 수집기 (Lease)</td><td>Redis 집계 · S3 NDJSON 배치</td></tr>
+<tr><td class="id sys">UC-14<span class="p">P1</span></td><td class="nm sys">자동 하이라이트 생성</td><td class="sys">화면 없음 — 카드로 표출</td><td>하이라이트 감지</td><td>감지기 → Core</td><td>Redis → PostgreSQL + Outbox · <span class="ev">HighlightDetected</span></td></tr>
+<tr><td class="id sys">UC-15<span class="p">P2</span></td><td class="nm sys">VOD 전환·보관</td><td class="sys">화면 없음 — VOD 뷰어로 표출</td><td>VOD 전환 · 보관 <span class="ev">(VOD)</span></td><td>Core → SQS(vod-finalize) → 미디어</td><td>S3 매니페스트 확정 · 멱등 broadcastId+ingestEpoch</td></tr>
+<tr><td class="id">UC-16<span class="p">P3</span></td><td class="nm">알림 발송</td><td>알림 › 알림함</td><td>알림</td><td>Core → Redis Pub/Sub → SSE</td><td>PostgreSQL · Outbox</td></tr>
+<tr><td class="id">UC-17<span class="p">P3</span></td><td class="nm">구독 갱신·종량 청구</td><td>설정 › 구독·결제 › 결제 상태</td><td>구독 · 과금 <span class="ev">(Subscription)</span></td><td>Core</td><td>PostgreSQL / PG API</td></tr>
+<tr><td class="id">UC-18<span class="p">P1</span></td><td class="nm">라이브 시청</td><td>라이브 › 대시보드 › 플레이어</td><td>라이브 시청</td><td>웹 → CDN → 미디어(LL-HLS)</td><td>S3 CMAF(1h 롤링)</td></tr>
+<tr><td class="id">UC-19<span class="p">P2</span></td><td class="nm">채팅량 그래프</td><td>대시보드 · VOD 뷰어 › 채팅량 그래프</td><td>카드 · 타임라인</td><td>Core(SSE) · 미리보기 워커</td><td>Redis 집계</td></tr>
+<tr><td class="id">UC-20<span class="p">P1</span></td><td class="nm">카드 목록</td><td>대시보드 › 하이라이트 카드 목록</td><td>카드 · 타임라인 <span class="ev">(HighlightCard)</span></td><td>Core</td><td>PostgreSQL · Redis 캐시</td></tr>
+<tr><td class="id">UC-21<span class="p">P2</span></td><td class="nm">VOD 시청</td><td>라이브 › VOD 뷰어</td><td>VOD 전환 · 보관</td><td>웹 → CDN → S3</td><td>S3(60일)</td></tr>
+<tr><td class="id">UC-22<span class="p">P1</span></td><td class="nm">클립 편집</td><td>하이라이트·클립 › 클립 편집기</td><td>클립 편집 <span class="ev">(ClipProject)</span> · 렌더 · AI 자막</td><td>웹(미리보기) · Core(메타) · 자막·미리보기·렌더 워커</td><td>PostgreSQL · SQS · S3</td></tr>
+<tr><td class="id">UC-23<span class="p">P2</span></td><td class="nm">편집본 저장·재출력</td><td>편집기 › 완료 액션 · 보관함</td><td>클립 자산 관리 <span class="ev">(ClipAsset)</span></td><td>Core · 렌더 워커</td><td>PostgreSQL · S3 · <span class="ev">RenderCompleted</span></td></tr>
+<tr><td class="id">UC-24<span class="p">P2</span></td><td class="nm">템플릿 관리</td><td>하이라이트·클립 › 템플릿 관리</td><td>템플릿</td><td>Core</td><td>PostgreSQL</td></tr>
+<tr><td class="id">UC-25<span class="p">P1</span></td><td class="nm">유튜브 업로드</td><td>편집기 › 완료 액션 · 업로드·승인함 › 업로드 상태</td><td>업로드 <span class="ev">(UploadAttempt)</span> · 권한 게이트</td><td>Core(Gate 1차) → SQS → 업로드 워커(Gate 2차)</td><td>SQS · PostgreSQL / YouTube API</td></tr>
+<tr><td class="id">UC-26<span class="p">P2</span></td><td class="nm">원클릭 자동 업로드</td><td>카드 액션 · 플러그인 핫키 (템플릿 지정 시)</td><td>업로드 · 템플릿</td><td>UC-25와 동일 파이프라인(편집 화면 생략)</td><td>〃</td></tr>
+<tr><td class="id">UC-27<span class="p">P1</span></td><td class="nm">업로드 상태·복구</td><td>업로드·승인함 › 업로드 상태</td><td>업로드 <span class="ev">(UploadAttempt)</span></td><td>업로드 워커 →(REST) Core</td><td>PostgreSQL · <code>RECONCILIATION_REQUIRED</code></td></tr>
+<tr><td class="id">UC-28<span class="p">P2</span></td><td class="nm">클립·편집본 삭제</td><td>하이라이트·클립 › 보관함</td><td>클립 자산 관리 <span class="ev">(ClipAsset)</span></td><td>Core</td><td>PostgreSQL · S3</td></tr>
+<tr><td class="id">UC-29<span class="p">P2</span></td><td class="nm">업로드 승인 요청</td><td>업로드·승인함 › 승인 대기함 › 내 요청</td><td>승인 <span class="ev">(UploadApproval)</span></td><td>Core</td><td>PostgreSQL · <span class="ev">UploadRequested</span></td></tr>
+<tr><td class="id">UC-30<span class="p">P2</span></td><td class="nm">업로드 승인/반려</td><td>업로드·승인함 › 승인 대기함</td><td>승인 <span class="ev">(UploadApproval)</span> · 이력 기록</td><td>Core</td><td>PostgreSQL · <span class="ev">UploadApproved</span></td></tr>
+<tr><td class="id">UC-31<span class="p">P3</span></td><td class="nm">구독 관리</td><td>공개 웹 › 요금 · 설정 › 구독·결제</td><td>구독 · 과금 <span class="ev">(Subscription)</span></td><td>Core</td><td>PostgreSQL / PG API</td></tr>
+<tr><td class="id">UC-32<span class="p">P3</span></td><td class="nm">사용량·청구 조회</td><td>설정 › 구독·결제 › 실시간 사용량 · 청구 내역</td><td>구독 · 과금</td><td>Core</td><td>PostgreSQL(계측 기준 TBD)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+읽는 법 — <b>③ 서비스 책임</b>의 괄호는 그 책임이 <b>소유하는 데이터</b>(다른 책임은 이 데이터를 직접 고치지 않는다).
+<b>④ 실행 단위</b>의 화살표는 처리 경로. <span class="ev">기울임 영문</span>은 도메인 이벤트.
+UC-13~15는 사용자 목표가 아닌 시스템 자동 동작이라 ② 화면이 없고 결과물(그래프·카드·VOD)로만 나타난다 — ①의 '시스템 자동' 그룹, 트리거는 ① 각 UC에 명시.
+</div>
+
+<div class="foot">
+PokeClip 설계 문서 · 부록 B —
+<a href="01-usecase.html">①</a> · <a href="02-ia.html">②</a> · <a href="03-service-architecture.html">③</a> · <a href="04-system-architecture.html">④</a> ·
+<a href="06-failure-scenarios.html">부록 A</a> · <a href="index.html">목록으로</a>
+</div>
+
+</div>
+</body>
+</html>

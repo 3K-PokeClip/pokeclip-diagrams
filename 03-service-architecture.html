@@ -89,6 +89,8 @@
   .node .uc{font-family:var(--mono);font-size:9px;border:1px solid var(--ink);padding:0 5px}
   .node .kd{font-family:var(--mono);font-size:9px;border:1px solid var(--faint);
             color:var(--sub);padding:0 5px}
+  .node .own{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 5px;
+             letter-spacing:.01em}
   .node.store{background:repeating-linear-gradient(135deg,#fff 0 6px,#f4f6f8 6px 12px)}
   .node.ext,.node.face{text-align:center}
   .node.ext .st,.node.face .st{font-family:var(--mono);font-size:9px;color:var(--sub);
@@ -118,8 +120,8 @@
   <div id="inner">
     <header class="page">
       <h1>Service Architecture</h1>
-      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.5 — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · 큐·DB·프로토콜 등 기술 구조는 ④ 시스템 아키텍처로<br>
-      선이 <b>묶음 테두리</b>에 닿으면 그 묶음에 <b>관여</b>한다는 뜻이고(웹 앱처럼 범위가 넓을 때), <b>블록</b>에 닿으면 그 블록과 <b>직접</b> 주고받는다는 뜻입니다 · 빗금 배경 = 저장소 · 블록·흐름 칩을 클릭하면 관련 요소만 남습니다</div>
+      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.6 — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · <b>각 블록은 논리적 비즈니스 기능(Capability)이며 독립 배포 단위가 아님</b> — 실행 단위 매핑은 ④ 시스템 아키텍처<br>
+      선이 <b>묶음 테두리</b>에 닿으면 그 묶음에 <b>관여</b>한다는 뜻이고(웹 앱처럼 범위가 넓을 때), <b>블록</b>에 닿으면 그 블록과 <b>직접</b> 주고받는다는 뜻입니다 · 빗금 배경 = 저장소 · 검은 배지 = 그 블록이 <b>소유(최종 책임)하는 데이터</b> — 같은 데이터를 다른 블록이 고치지 않는다 · 블록·흐름 칩을 클릭하면 관련 요소만 남습니다</div>
     </header>
     <div id="wrap">
       <svg id="wires"></svg>
@@ -168,7 +170,7 @@ const phaseOfBlock = b => b.p || Math.min(...b.uc.replace(/^UC-/,"").split("·")
 /* ===== 서비스 블록 ===== */
 const NODES = [
   /* 실시간 파이프라인 */
-  {id:"rt-ingest", b:"rt", c:1, r:1, nm:"송출 수신 · 트랙 분리", uc:"UC-04·11",
+  {id:"rt-ingest", b:"rt", c:1, r:1, nm:"송출 수신 · 트랙 분리", uc:"UC-04·11", own:"Broadcast",
    nt:"Stream Key 발급·검증 · 방송 세션 시작·종료·목록 · 영상 1 + 오디오 최대 10트랙"},
   {id:"rt-buffer", b:"rt", c:2, r:1, nm:"되감기 버퍼", uc:"UC-11·18", kind:"보관 1시간", store:true,
    nt:"최근 1시간 · 트랙별 보관 — 편집 구간의 원본"},
@@ -178,24 +180,24 @@ const NODES = [
    nt:"방송 시작과 함께 · 플랫폼은 데이터 제공자"},
   {id:"rt-detect", b:"rt", c:2, r:2, nm:"하이라이트 감지", uc:"UC-14",
    nt:"채팅 집계 · 피크 감지 → 카드 자동 생성 (수집→카드 p95 2초) — 입력은 채팅뿐"},
-  {id:"rt-card",   b:"rt", c:3, r:2, nm:"카드 · 타임라인", uc:"UC-12·19·20",
+  {id:"rt-card",   b:"rt", c:3, r:2, nm:"카드 · 타임라인", uc:"UC-12·19·20", own:"HighlightCard",
    nt:"자동+핫키 수동 카드 · 채팅량 그래프 · 처리 상태 · 숨김·무시"},
 
   /* 아카이브 */
-  {id:"ar-vod",    b:"ar", c:3, r:1, nm:"VOD 전환 · 보관", uc:"UC-15·21", kind:"보관 60일", store:true,
-   nt:"방송 종료 시 전환 · 만료 카드는 챕터로 재활성화"},
+  {id:"ar-vod",    b:"ar", c:3, r:1, nm:"VOD 전환 · 보관", uc:"UC-15·21", kind:"보관 60일", store:true, own:"VOD",
+   nt:"종료 시 매니페스트 확정(파일 이동 없음) · 60일 수명 관리 · 만료 카드는 챕터로 재활성화"},
 
   /* 제작 파이프라인 */
-  {id:"mk-edit",   b:"mk", c:1, r:1, nm:"클립 편집", uc:"UC-22",
+  {id:"mk-edit",   b:"mk", c:1, r:1, nm:"클립 편집", uc:"UC-22", own:"ClipProject",
    nt:"구간·트랙·비율·자막 · 브라우저 미리보기(서버 렌더 없음) · 자동 임시 저장"},
   {id:"mk-render", b:"mk", c:2, r:1, nm:"렌더 · 출력", uc:"UC-22·23",
    nt:"렌더 큐(비동기) · 재출력은 VOD 보관 60일 내"},
-  {id:"mk-store",  b:"mk", c:3, r:1, nm:"보관함", uc:"UC-23·28", kind:"보관 영구", store:true, p:1,
-   nt:"클립 · 편집본 영구 보관 — P1은 저장만, 목록·재편집·삭제는 P2"},
-  {id:"mk-upload", b:"mk", c:4, r:1, nm:"업로드", uc:"UC-25·26·27",
-   nt:"기본 비공개 · CC 등록 · 실패 시 재인증·재시도"},
-  {id:"mk-approve",b:"mk", c:5, r:1, nm:"승인", uc:"UC-29·30",
-   nt:"권한 부족 시 차단 대신 승인 대기함"},
+  {id:"mk-store",  b:"mk", c:3, r:1, nm:"클립 자산 관리", uc:"UC-23·28", kind:"보관 영구", store:true, p:1, own:"ClipAsset",
+   nt:"완성 클립 · 편집본 영구 보관(② 화면명은 '보관함') — P1은 저장만, 목록·재편집·삭제는 P2"},
+  {id:"mk-upload", b:"mk", c:4, r:1, nm:"업로드", uc:"UC-25·26·27", own:"UploadAttempt",
+   nt:"권한 게이트 2단(작업 생성 시 · 업로드 직전) · 기본 비공개 · CC 등록 · 실패 시 재인증·재시도"},
+  {id:"mk-approve",b:"mk", c:5, r:1, nm:"승인", uc:"UC-29·30", own:"UploadApproval",
+   nt:"권한 부족 시 차단 대신 승인 대기함 · 처리 이력 기록"},
   {id:"mk-stt",    b:"mk", c:1, r:2, nm:"AI 자막", uc:"UC-22", p:2,
    nt:"자막 생성 · 제목 추천 — 비동기"},
   {id:"mk-tpl",    b:"mk", c:4, r:2, nm:"템플릿", uc:"UC-24",
@@ -206,16 +208,16 @@ const NODES = [
    nt:"비로그인 화면 — 랜딩 · 요금 안내 · 플러그인 다운로드 · 문의 접수 · 약관 · 서비스 상태"},
   {id:"cm-help",   b:"cm", c:2, r:1, nm:"문의 · 지원", uc:"UC-10",
    nt:"가입 전·후 공통 · 접수 상태 · 답변"},
-  {id:"cm-perm",   b:"cm", c:3, r:1, nm:"협업 · 권한", uc:"UC-05·06·07",
-   nt:"접근 신청·승인 · 권한 단계 · 회수 시 즉시 전면 차단"},
+  {id:"cm-perm",   b:"cm", c:3, r:1, nm:"협업 · 권한", uc:"UC-05·06·07", own:"EditorGrant",
+   nt:"접근 신청·승인 · 권한 3단계(기본/직접 업로드/원클릭 자동) · 회수 시 즉시 전면 차단 · 변경 이력 기록"},
   {id:"cm-auth",   b:"cm", c:4, r:1, nm:"계정 · 인증", uc:"UC-01·09",
    nt:"구글 로그인 · 계정 삭제(활성 구독 해지 선행)"},
-  {id:"cm-bill",   b:"cm", c:5, r:1, nm:"구독 · 과금", uc:"UC-17·31·32",
+  {id:"cm-bill",   b:"cm", c:5, r:1, nm:"구독 · 과금", uc:"UC-17·31·32", own:"Subscription",
    nt:"구독 관리 · 사용량 계측(내부) · 종량 청구 — 기준 TBD"},
   {id:"cm-noti",   b:"cm", c:3, r:2, nm:"알림", uc:"UC-08·16",
    nt:"종류별 on/off · 방송 시작 · 승인 · 결제 실패 · VOD 만료 임박"},
-  {id:"cm-link",   b:"cm", c:4, r:2, nm:"채널 연동", uc:"UC-02·03",
-   nt:"치지직 / SOOP · 유튜브 토큰 보관 · 만료 재인증"},
+  {id:"cm-link",   b:"cm", c:4, r:2, nm:"채널 연동", uc:"UC-02·03", own:"ChannelToken",
+   nt:"치지직 / SOOP · 유튜브 토큰 보관 · 만료·철회 재인증"},
 ];
 
 /* ===== 접점(왼쪽) · 외부 시스템(오른쪽) ===== */
@@ -269,6 +271,7 @@ for(const n of NODES){
   el.innerHTML = `<div class="nm">${n.nm}</div><div class="nt">${n.nt}</div>`
     + `<div class="bd">${n.uc?`<span class="uc">${n.uc}</span>`:""}`
     + `${n.kind?`<span class="kd">${n.kind}</span>`:""}`
+    + `${n.own?`<span class="own">${n.own}</span>`:""}`
     + `<span class="ph">P${phaseOfBlock(n)}</span></div>`;
   wrap.appendChild(el);
 }
@@ -314,12 +317,12 @@ const EDGES = [
   {f:1, p:[P("rt-ingest","r"), P("rt-buffer","l")]},
   {f:1, p:[P("rt-buffer","r",-10), pt(box("rt-play").l, box("rt-buffer").cy-10)], to:"rt-play", from:"rt-buffer"},
   {f:1, p:[P("rt-chat","r"), P("rt-detect","l")]},
-  {f:1, p:[P("rt-detect","r"), P("rt-card","l")]},
+  {f:1, l:"HighlightDetected", p:[P("rt-detect","r"), P("rt-card","l")]},
   {f:1, l:"시점 이동", p:[P("rt-card","r"), pt(GX.c34, box("rt-card").cy),
         pt(GX.c34, box("rt-play").cy+10), P("rt-play","l",10)]},
 
   /* ③ 보관 */
-  {f:3, l:"방송 종료 시 전환", p:[P("rt-buffer","r",20), pt(GX.c23, box("rt-buffer").cy+20),
+  {f:3, l:"BroadcastStopped → 전환", p:[P("rt-buffer","r",20), pt(GX.c23, box("rt-buffer").cy+20),
         pt(GX.c23, box("ar-vod").cy), P("ar-vod","l")]},
   {f:3, l:"만료 카드 = 챕터", p:[P("ar-vod","t"), P("rt-card","b")]},
   {f:3, l:"재출력은 VOD 보관 60일 내", p:[P("ar-vod","r"), pt(GX.c34b, box("ar-vod").cy),
@@ -334,8 +337,8 @@ const EDGES = [
   {f:2, l:"구간 원본 (VOD)", p:[P("ar-vod","l",20), pt(GX.c23, box("ar-vod").cy+20),
         pt(GX.c23, GY.arMk2), pt(box("mk-edit").cx, GY.arMk2), P("mk-edit","t")]},
   {f:2, l:"자막 · 제목 후보", both:true, p:[P("mk-edit","b"), P("mk-stt","t")]},
-  {f:2, p:[P("mk-edit","r"), P("mk-render","l")]},
-  {f:2, p:[P("mk-render","r"), P("mk-store","l")]},
+  {f:2, l:"RenderRequested", p:[P("mk-edit","r"), P("mk-render","l")]},
+  {f:2, l:"RenderCompleted", p:[P("mk-render","r"), P("mk-store","l")]},
   {f:2, p:[P("mk-store","r"), P("mk-upload","l")]},
   {f:2, l:"원클릭 지정", p:[P("mk-tpl","t"), P("mk-upload","b")]},
   {f:2, ph:2, l:"원클릭 (핫키·카드 액션 · 템플릿 지정 시)", p:[P("rt-card","r",-20), pt(GX.c34-14, box("rt-card").cy-20),
@@ -344,8 +347,8 @@ const EDGES = [
         pt(box("mk-edit").cx-35, GY.mkTop), P("mk-edit","t",-35)]},
 
   /* ④ 권한 */
-  {f:4, l:"권한 부족 시 대기 → 승인 후 재개", both:true, p:[P("mk-upload","r"), P("mk-approve","l")]},
-  {f:4, l:"권한 판정", p:[P("cm-perm","r"), pt(GX.c34, box("cm-perm").cy),
+  {f:4, l:"UploadRequested → 승인 후 재개", both:true, p:[P("mk-upload","r"), P("mk-approve","l")]},
+  {f:4, l:"권한 게이트 (생성 시 · 직전 2단)", p:[P("cm-perm","r"), pt(GX.c34, box("cm-perm").cy),
         pt(GX.c34, box("mk-upload").cy+40), P("mk-upload","l",40)]},
   {f:4, l:"접근 판정 · 회수 시 편집·보관함 전면 차단", p:[P("cm-perm","l"), pt(GX.c23, box("cm-perm").cy),
         pt(GX.c23, GY.mkCm), pt(GX.c12, GY.mkCm), pt(GX.c12, box("mk-edit").cy+20), P("mk-edit","r",20)]},
@@ -354,7 +357,7 @@ const EDGES = [
         P("cm-noti","t",59)]},
 
   /* UC-16 이벤트 발송 — 나머지 세 이벤트도 각자 발생한 흐름으로 알림에 닿는다 */
-  {f:1, l:"방송 시작", p:[P("rt-ingest","l"), pt(GX.boundL3, box("rt-ingest").cy),
+  {f:1, l:"BroadcastStarted", p:[P("rt-ingest","l"), pt(GX.boundL3, box("rt-ingest").cy),
         pt(GX.boundL3, box("cm-noti").cy), P("cm-noti","l")]},
   {f:5, l:"결제 실패", p:[P("cm-bill","b",40), pt(box("cm-bill").cx+40, GY.cmLow),
         pt(box("cm-noti").cx, GY.cmLow), P("cm-noti","b")]},

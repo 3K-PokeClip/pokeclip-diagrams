@@ -261,7 +261,24 @@
 </table>
 </div>
 
-<h2>5. 우선순위 <span class="sub">구현 순서</span></h2>
+<h2>5. SQS 큐 정책 <span class="sub">④의 다섯 큐 — 재시도·격리·스케일 기준</span></h2>
+<div class="wrapx">
+<table>
+<thead><tr>
+  <th>큐</th><th>소비자</th><th>멱등키</th><th>Visibility Timeout</th><th>DLQ 이동(최대 수신)</th><th>오토스케일 지표</th>
+</tr></thead>
+<tbody>
+<tr><td class="c">vod-finalize-jobs</td><td>미디어 서버(파이널라이저 모드)</td><td><code>broadcastId + ingestEpoch</code></td><td>5분</td><td>3회</td><td>보통 0~1 — 적체 자체가 알람</td></tr>
+<tr><td class="c">subtitle-jobs</td><td>자막 워커</td><td><code>jobId</code></td><td>15분</td><td>3회</td><td>큐 길이 (min 0)</td></tr>
+<tr><td class="c">preview-jobs</td><td>미리보기 워커</td><td><code>jobId</code></td><td>5분</td><td>3회</td><td>큐 길이 (min 0)</td></tr>
+<tr><td class="c">render-jobs</td><td>렌더 워커</td><td><code>jobId + renderVersion</code></td><td>30분 + 처리 중 heartbeat 연장</td><td>2회</td><td>큐 길이 (min 0)</td></tr>
+<tr><td class="c">upload-jobs</td><td>업로드 워커</td><td><code>jobId</code> + 채널 조회 확정</td><td>10분</td><td>2회 — 불명확 성공은 DLQ가 아니라 <code>RECONCILIATION_REQUIRED</code></td><td>큐 길이 (min 0)</td></tr>
+</tbody>
+</table>
+</div>
+<div class="note">전 큐 <b>Standard</b>(FIFO 아님) — 순서 보장 대신 멱등키로 중복을 흡수한다. FIFO는 처리량·복잡도에서 손해이고, 위 작업들은 순서 의존이 없다. 각 큐는 <b>전용 DLQ</b>를 가지며 DLQ 유입은 즉시 알람 대상.</div>
+
+<h2>6. 우선순위 <span class="sub">구현 순서</span></h2>
 <div class="note">
 <ul>
   <li><b>1. OBS 제어선</b> — <code>start/stop/heartbeat</code>. 이게 없으면 정상 종료와 단절을 영원히 구분 못 한다.</li>

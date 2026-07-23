@@ -52,33 +52,33 @@
     <span class="num">01</span>
     <span class="body">
       <span class="ttl">유스케이스 다이어그램<span class="en">Use Case Diagram</span></span>
-      <span class="desc">액터 6 · 유스케이스 32 · 그룹 6 — Codex 최종 검증 결함 0건</span>
+      <span class="desc">액터 6 · 유스케이스 32 · 그룹 6 — 자동 UC 트리거 · 권한 3단계 · 예외 흐름 명시</span>
     </span>
-    <span class="st">v3.4</span>
+    <span class="st">v3.5</span>
   </a>
   <a class="card" href="02-ia.html">
     <span class="num">02</span>
     <span class="body">
       <span class="ttl">IA · 정보 구조<span class="en">Information Architecture</span></span>
-      <span class="desc">depth 1 4갈래 · 노드 165 · UC 배지 50개 ①과 정합 · Codex 검증 결함 0건</span>
+      <span class="desc">표면 4 · 글로벌 메뉴 6(라이브·클립·승인함·협업자·알림·설정) · 노드 170 · 상태 화면 포함</span>
     </span>
-    <span class="st">v2.8</span>
+    <span class="st">v3.0</span>
   </a>
   <a class="card" href="03-service-architecture.html">
     <span class="num">03</span>
     <span class="body">
       <span class="ttl">서비스 아키텍처<span class="en">Service Architecture</span></span>
-      <span class="desc">서비스 블록 21 · 접점 4 · 외부 4 · 연결 45 · 흐름 5 — 하이라이트 감지는 채팅 기반(감지 서버) · 핫키는 플러그인→카드</span>
+      <span class="desc">서비스 블록 21(논리 Capability) · 연결 45 — 데이터 소유권 · 도메인 이벤트명 · 권한 게이트 2단</span>
     </span>
-    <span class="st">v1.5</span>
+    <span class="st">v1.6</span>
   </a>
   <a class="card" href="04-system-architecture.html">
     <span class="num">04</span>
     <span class="body">
       <span class="ttl">시스템 아키텍처<span class="en">System Architecture</span></span>
-      <span class="desc">실행 단위 10 · 저장소 4 · 외부 4 · 연결 28 — 팀 ADR 정합(PostgreSQL·SQS·CMAF) · Outbox·멱등성·업로드 Gate·워커 4분할 반영</span>
+      <span class="desc">실행 단위 10 · 저장소 4 · 연결 29 — ADR 정합(PostgreSQL·SQS·CMAF) · VOD Finalizer · Outbox Dispatcher · Gate=Core 모듈</span>
     </span>
-    <span class="st">v2.0</span>
+    <span class="st">v2.1</span>
   </a>
   <a class="card todo" href="05-cloud-architecture.html">
     <span class="num">05</span>
@@ -91,8 +91,16 @@
   <a class="card" href="06-failure-scenarios.html">
     <span class="num">A</span>
     <span class="body">
-      <span class="ttl">부록 · 장애 시나리오<span class="en">Failure Scenarios</span></span>
-      <span class="desc">실행 단위·저장소·외부가 죽었을 때 영향·감지·복구·데이터 손실 · 정합성이 깨지는 6개 지점</span>
+      <span class="ttl">부록 A · 장애 시나리오<span class="en">Failure Scenarios</span></span>
+      <span class="desc">컴포넌트별 영향·감지·복구·데이터 손실 · 정합성이 깨지는 6개 지점 · SQS 큐 정책</span>
+    </span>
+    <span class="st">v1.1</span>
+  </a>
+  <a class="card" href="07-traceability.html">
+    <span class="num">B</span>
+    <span class="body">
+      <span class="ttl">부록 B · 추적성 표<span class="en">Traceability Matrix</span></span>
+      <span class="desc">UC 32개 → ② 화면 → ③ 책임(소유 데이터) → ④ 실행 단위 → 저장소·이벤트</span>
     </span>
     <span class="st">v1.0</span>
   </a>

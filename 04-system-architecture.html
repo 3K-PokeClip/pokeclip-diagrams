@@ -121,7 +121,7 @@
   <div id="inner">
     <header class="page">
       <h1>System Architecture</h1>
-      <div class="meta">PokeClip · 실행 단위 <b>10</b> · 저장소 <b>4</b> · 외부 <b>4</b> · v2.0 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
+      <div class="meta">PokeClip · 실행 단위 <b>10</b> = 플러그인 · 웹 · 미디어 서버 · Core API · 채팅 수집기 · 감지기 · 워커 4종 (권한 Gate는 Core 모듈 — 별도 배포 아님 · Kafka는 성장기라 불포함) · 저장소 <b>4</b> · 외부 <b>4</b> · v2.1 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고 프로토콜·저장소·정합성 장치를 드러낸다 · AWS 배치는 ⑤로<br>
       <b>초기 스택</b> PostgreSQL(+JSONB) · Java 21 Spring Boot/WebFlux · Go+FFmpeg 미디어 · Redis 실시간 집계 · SQS+DLQ 작업 큐 · CMAF/S3 &nbsp;—&nbsp; <b>Kafka는 초기 구성에서 제외</b>, 방송 수·이벤트 소비자가 늘어 재처리·다중 소비가 필요해지는 <b>성장기부터 이벤트 전용</b>으로 도입(작업 큐는 그때도 SQS 유지)<br>
       <b>성능 목표(서버 통제 구간)</b> 채팅 수집 시각 → 카드 표시 <b>p95 2초</b> · 피크 감지 → 카드 표시 <b>p95 1초</b> — "장면 발생 → 카드"는 플랫폼 방송 지연과 시청자 반응 시차가 끼어 서버가 보장할 수 없다<br>
       빗금 = 저장소 · 점선 회색 = 성장기 도입 · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 · 저장소로 향하는 선은 그 시스템의 프로토콜을 씀(JDBC · Redis · SQS · S3 API) · 선이 <b>묶음 테두리</b>에 닿으면 그 묶음 전체가 관여한다는 뜻 · 상자·칩 클릭으로 관련 연결만</div>
@@ -169,10 +169,10 @@ const NODES = [
   /* 실시간 수집 · 감지 */
   {id:"media", b:"rt", x:246, y:72, w:300, h:118, p:1, tech:"Go · FFmpeg",
    nm:"미디어 서버", uc:"UC-04·11·15·18·21",
-   nt:"SRT 수신 · 영상1 + 오디오≤10 트랙 분리 · monitor audio 생성 · CMAF 세그먼트화 → S3 · DVR 1시간 롤링 · 종료 시 VOD는 재인코딩 없이 매니페스트 확정"},
+   nt:"SRT 수신 · 영상1 + 오디오≤10 트랙 분리 · monitor audio 생성 · CMAF 세그먼트화 → S3 · DVR 1시간 롤링 · VOD 확정은 vod-finalize-job 소비로(종료 순간 장애도 재시도로 확정 · 멱등 broadcastId+ingestEpoch)"},
   {id:"chat", b:"rt", x:626, y:72, w:300, h:118, p:1, tech:"Java 21 · WebFlux",
    nm:"채팅 수집기", uc:"UC-13",
-   nt:"치지직 공식 API · SOOP WS · 방송당 한 인스턴스만 활성(Lease) · 플랫폼 반응 시차 보정 · 집계는 Redis, 원본 JSONL은 S3"},
+   nt:"치지직 공식 API · SOOP WS · 방송당 한 인스턴스만 활성(Lease) · 플랫폼 반응 시차 보정 · 집계는 Redis, 원본은 30~60초 NDJSON 배치로 S3(방송·시간 키로 중복 방지)"},
   {id:"detect", b:"rt", x:1006, y:72, w:300, h:118, p:1, tech:"Java 21 · Spring",
    nm:"하이라이트 감지기", uc:"UC-14",
    nt:"Redis 집계 위 롤링 베이스라인 · 워밍업 전 발행 보류 · 멀티윈도우 합의 · 카드 멱등키 broadcastId + detectorVersion + peakWindowStart"},
@@ -184,9 +184,9 @@ const NODES = [
   {id:"core", b:"app", x:246, y:300, w:680, h:124, p:1, tech:"Java 21 · Spring Boot",
    nm:"Core API", uc:"UC-01~03·05~10·12·16·17·19·20·22·24·28~32",
    nt:"인증 · 권한 · 방송 세션(heartbeat grace로 정상 종료와 단절 구분) · 카드 · 편집 메타 · 보관함 · 승인 · 템플릿 · 구독 · 알림 · REST + SSE — 카드와 Outbox를 한 트랜잭션에 기록한 뒤 이벤트를 발행한다"},
-  {id:"gate", b:"app", x:1006, y:300, w:300, h:124, p:1,
+  {id:"gate", b:"app", x:1006, y:300, w:300, h:124, p:1, mod:true, tech:"Core API 내부 모듈",
    nm:"업로드 권한 Gate", uc:"UC-29·30",
-   nt:"Core 내부 관문 — 작업 생성 시 1차, 실제 업로드 직전 2차로 두 번 검사. 편집 권한만 가진 편집자가 만든 작업이 그대로 유튜브로 나가지 못하게 막는다"},
+   nt:"별도 배포가 아니라 Core의 모듈(점선) — 작업 생성 시 1차, 실제 업로드 직전 2차로 두 번 검사. 판정 원본은 PostgreSQL. 편집 권한만 가진 편집자의 작업이 그대로 유튜브로 나가지 못하게 막는다"},
 
   /* 비동기 워커 — 같은 이미지, 큐·오토스케일·DLQ는 각자 */
   {id:"w-sub", b:"wk", x:246, y:542, w:300, h:118, p:2, tech:"Java 21 · STT 엔진 TBD",
@@ -208,14 +208,14 @@ const NODES = [
    nt:"계정·권한·방송·카드·레시피(JSONB)·클립·잡 상태 · Outbox 테이블 · 유튜브 refresh token은 KMS 암호화 저장"},
   {id:"sqs", b:"data", x:626, y:760, w:300, h:118, p:1, kind:"store",
    nm:"SQS + DLQ", uc:"작업 큐",
-   nt:"subtitle · preview · render · upload 네 큐, 각각 전용 DLQ · jobId 멱등 · 큐 길이로 워커 오토스케일"},
+   nt:"vod-finalize · subtitle · preview · render · upload 다섯 큐, 각각 전용 DLQ · jobId 멱등 · 큐 길이로 오토스케일 · 렌더는 긴 처리에 맞춰 visibility timeout 연장 — 상세 정책은 부록 A"},
   {id:"s3", b:"data", x:1006, y:760, w:300, h:118, p:1, kind:"store",
    nm:"S3", uc:"객체",
-   nt:"CMAF 세그먼트 — 라이브 1시간 롤링 · VOD 60일 · 채팅 아카이브 JSONL · 완성 클립 보관 · 임시 산출물 1~7일"},
+   nt:"CMAF 세그먼트 — 라이브 1시간 롤링 · VOD 60일 · 채팅 아카이브 NDJSON · 완성 클립 보관 · 임시 산출물 1~7일"},
 
   /* 성장기 */
   {id:"kafka", x:546, y:944, w:900, h:76, p:"g", growth:true,
-   nm:"Kafka", nt:"성장기 도입 — 이벤트 재처리·다중 소비가 필요해지면 채팅·감지·상태 이벤트 전용으로. 자막·렌더·업로드 작업은 그때도 SQS+DLQ가 소유한다"},
+   nm:"Kafka", nt:"Future · 성장기 전용 — 실행 단위 수에 불포함. 도입 조건: 이벤트 소비자 다종화 · 이벤트 재처리 필요 · Redis 집계 처리량 한계 · 이벤트 보관·Replay 요구. 도입해도 이벤트 전용 — 자막·렌더·업로드 작업은 SQS+DLQ가 소유"},
 ];
 
 /* ===== 클라이언트(좌) · 외부(우) ===== */
@@ -264,7 +264,7 @@ for(const b of BANDS){
 
 for(const n of NODES){
   const el = document.createElement("div");
-  el.className = "node " + (n.growth?"growth":n.kind==="store"?"store":"prog");
+  el.className = "node " + (n.growth?"growth":n.kind==="store"?"store":"prog") + (n.mod?" ghost":"");
   el.id = n.id; el.dataset.node = n.id; el.dataset.phase = n.p;
   Object.assign(el.style,{left:n.x+"px",top:n.y+"px",width:n.w+"px",height:n.h+"px"});
   if(n.growth){
@@ -328,11 +328,13 @@ const EDGES = [
   /* 정합성 · 팬아웃 */
   {f:3, l:"카드 + Outbox 한 트랜잭션 (JDBC)", p:[P("core","b",-320), pt(266,440), pt(226,440),
         pt(226,730), pt(box("pg").cx,730), P("pg","t")]},
-  {f:1, l:"SSE 팬아웃 (Pub/Sub) · 세션·캐시", both:true, p:[P("core","r",-45),
+  {f:1, l:"Outbox Dispatcher → Pub/Sub 팬아웃 · 세션·캐시", both:true, p:[P("core","r",-45),
         pt(986,box("core").cy-45), pt(986,250), pt(1636,250), P("redis","b",100)]},
 
   /* 제작 */
-  {f:2, l:"작업 발행 (jobId 멱등)", p:[P("core","b",0), pt(586,730), pt(box("sqs").cx,730), P("sqs","t")]},
+  {f:2, l:"작업 발행 (jobId 멱등 · vod-finalize 포함)", p:[P("core","b",0), pt(586,730), pt(box("sqs").cx,730), P("sqs","t")]},
+  {f:2, l:"vod-finalize-jobs", to:"media", p:[P("sqs","r",-20), pt(966,box("sqs").cy-20),
+        pt(966,244), pt(box("media").cx,244), P("media","b")]},
   {f:2, l:"subtitle-jobs", p:[P("sqs","t",-70), pt(706,696), pt(box("w-sub").cx,696), P("w-sub","b")]},
   {f:2, l:"preview-jobs", p:[P("sqs","t",0), P("w-prev","b")]},
   {f:2, l:"render-jobs", p:[P("sqs","t",70), pt(846,684), pt(box("w-render").cx,684), P("w-render","b")]},
