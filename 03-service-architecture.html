@@ -47,11 +47,13 @@
   #wires{position:absolute;inset:0;z-index:1;pointer-events:none}
   #wires path{fill:none;stroke:var(--ink);stroke-width:1.15;opacity:.5;stroke-linejoin:round;
               transition:opacity .18s ease, stroke-width .18s ease}
-  #wires text{font-size:9.5px;fill:#4b5563;paint-order:stroke;stroke:var(--bg);stroke-width:4px;
+  /* 라벨은 블록보다 위(z 3)에 둔다 — 아래에 깔리면 글씨가 가려진다 */
+  #labels{position:absolute;inset:0;z-index:3;pointer-events:none}
+  #labels text{font-size:9.5px;fill:#4b5563;paint-order:stroke;stroke:var(--bg);stroke-width:4.5px;
               font-weight:600;transition:opacity .18s ease}
-  #wrap.focus #wires path,#wrap.focus #wires text{opacity:.06}
+  #wrap.focus #wires path,#wrap.focus #labels text{opacity:.06}
   #wrap.focus #wires path.on{opacity:.95;stroke-width:1.9}
-  #wrap.focus #wires text.on{opacity:1}
+  #wrap.focus #labels text.on{opacity:1}
 
   .side{position:absolute;width:156px;z-index:2}
   .node{position:absolute;background:#fff;border:1.2px solid var(--ink);border-radius:5px;
@@ -100,6 +102,7 @@
     </header>
     <div id="wrap">
       <svg id="wires"></svg>
+      <svg id="labels"></svg>
     </div>
   </div>
 </div>
@@ -384,6 +387,11 @@ svg.innerHTML = `<defs>
     <path d="M8,1 L1.5,4 L8,7" fill="none" stroke="#16181c" stroke-width="1.2"/></marker>
 </defs>`;
 
+const labelSvg = document.getElementById("labels");
+labelSvg.setAttribute("width", wrap.offsetWidth);
+labelSvg.setAttribute("height", wrap.offsetHeight);
+const labelQueue = [];
+
 /* 각 연결의 양 끝이 어느 노드인지 — 강조에 쓴다 */
 function endsOf(e){
   const hit = p => {
@@ -408,21 +416,67 @@ EDGES.forEach((e,i)=>{
   path.dataset.flow = e.f; path.dataset.idx = i; path.dataset.ends = e.ends.join(",");
   svg.appendChild(path);
 
-  if(e.l){
-    /* 가장 긴 구간의 중앙에 라벨 */
-    let best = 0, bx = 0, by = 0;
-    for(let k=1;k<e.p.length;k++){
-      const len = Math.abs(e.p[k].x-e.p[k-1].x) + Math.abs(e.p[k].y-e.p[k-1].y);
-      if(len > best){ best = len; bx = (e.p[k].x+e.p[k-1].x)/2; by = (e.p[k].y+e.p[k-1].y)/2; }
-    }
-    const t = document.createElementNS(NS,"text");
-    t.setAttribute("x", bx); t.setAttribute("y", by-4);
-    t.setAttribute("text-anchor","middle");
-    t.textContent = e.l;
-    t.dataset.flow = e.f; t.dataset.idx = i; t.dataset.ends = e.ends.join(",");
-    svg.appendChild(t);
-  }
+  if(e.l) labelQueue.push({edge:e, idx:i});
 });
+
+/* ---------- 라벨 배치: 블록·다른 라벨을 피해 앉힌다 ---------- */
+const nodeBoxes = () => [...document.querySelectorAll(".node")].map(el => ({
+  l:el.offsetLeft, t:el.offsetTop, r:el.offsetLeft+el.offsetWidth, b:el.offsetTop+el.offsetHeight
+}));
+const rectOf = t => { const b = t.getBBox(); return {l:b.x, t:b.y, r:b.x+b.width, b:b.y+b.height}; };
+const clash = (a, b, pad=2) =>
+  Math.min(a.r,b.r+pad)-Math.max(a.l,b.l-pad) > 0 && Math.min(a.b,b.b+pad)-Math.max(a.t,b.t-pad) > 0;
+
+const placed = [];
+const blocks = nodeBoxes();
+for(const {edge, idx} of labelQueue){
+  const t = document.createElementNS(NS,"text");
+  t.setAttribute("text-anchor","middle");
+  t.textContent = edge.l;
+  t.dataset.flow = edge.f; t.dataset.idx = idx; t.dataset.ends = edge.ends.join(",");
+  labelSvg.appendChild(t);
+
+  /* 후보: 긴 구간부터, 각 구간의 여러 지점 — 세로 구간은 옆으로 비켜 앉힌다 */
+  const segs = [];
+  for(let k=1;k<edge.p.length;k++){
+    const a = edge.p[k-1], b = edge.p[k];
+    segs.push({a, b, len:Math.abs(b.x-a.x)+Math.abs(b.y-a.y), horiz:a.y===b.y});
+  }
+  segs.sort((p,q)=>q.len-p.len);
+  const cands = [];
+  for(const s of segs){
+    for(const f of [.5,.35,.65,.22,.78]){
+      const x = s.a.x + (s.b.x-s.a.x)*f, y = s.a.y + (s.b.y-s.a.y)*f;
+      if(s.horiz) cands.push({x, y:y-4});
+      else { cands.push({x:x+3, y}); cands.push({x:x-3, y}); }
+    }
+  }
+
+  const free = (c, pad=2) => {
+    t.setAttribute("x", c.x); t.setAttribute("y", c.y);
+    const r = rectOf(t);
+    return !blocks.some(bx=>clash(r,bx,pad)) && !placed.some(pr=>clash(r,pr,pad));
+  };
+
+  let chosen = cands[0], clean = false;
+  for(const c of cands){ if(free(c)){ chosen = c; clean = true; break; } }
+
+  /* 위아래로 붙은 블록 사이 16px 틈에 놓인 짧은 선은 위 후보로 못 앉는다.
+     틈 한가운데를 노리도록 잘게 밀어보고, 그래도 안 되면 옆으로 옮긴다. */
+  if(!clean){
+    const base = cands[0];
+    outer:
+    for(const dy of [3,-3,4,-4,6,-6,10,-10,16,-16,24,-24,32,-32,56,-56,72,-72]){
+      for(const dx of [0,-70,70,-140,140,-180,180]){
+        const c = {x:base.x+dx, y:base.y+dy};
+        if(free(c, 0)){ chosen = c; clean = true; break outer; }
+      }
+    }
+  }
+  t.setAttribute("x", chosen.x); t.setAttribute("y", chosen.y);
+  if(!clean) t.classList.add("crowded");
+  placed.push(rectOf(t));
+}
 
 /* ===== 흐름 칩 ===== */
 const flowsEl = document.getElementById("flows");
@@ -481,7 +535,7 @@ document.getElementById("btnOut").addEventListener("click", ()=>zoomCenter(1/1.2
 
 /* ===== 강조 ===== */
 let pinned = null;   /* {kind:"node",id} | {kind:"flow",no} */
-const lines = () => [...svg.querySelectorAll("path[data-idx],text[data-idx]")];
+const lines = () => [...svg.querySelectorAll("path[data-idx]"), ...labelSvg.querySelectorAll("text[data-idx]")];
 
 /* 끝점이 묶음(band-xx)이면 그 묶음의 블록 전체를 켠다 */
 function litFrom(near){
