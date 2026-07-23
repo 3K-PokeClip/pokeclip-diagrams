@@ -147,7 +147,7 @@
   <div id="inner">
     <header class="page">
       <h1>Use Case Diagram</h1>
-      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.7 — P1 전용 뷰: 주소에 <b>?p=1</b> — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
+      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.8 — P1 전용 뷰: 주소에 <b>?p=1</b> — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
     </header>
 
     <div id="wrap">
@@ -510,11 +510,12 @@ for(const [code] of Object.entries(ACTORS)){
 }
 document.addEventListener("mouseover",e=>{
   if(pinned) return;
+  const a=e.target.closest(".actor"); if(a) return focusActor(a.id.replace("actor-",""));
   const u=e.target.closest(".uc"); if(u) focusUC(u);
 });
 document.addEventListener("mouseout",e=>{
   if(pinned) return;
-  if(e.target.closest(".uc")) clearFocus();
+  if(e.target.closest(".actor")||e.target.closest(".uc")) clearFocus();
 });
 document.addEventListener("click",e=>{
   if(dragged){ dragged = false; return; }   /* 화면을 끌었으면 클릭으로 보지 않는다 */
