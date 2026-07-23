@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokeClip — ④ 시스템 아키텍처</title>
+<style>
+  :root{
+    --bg:#fbfbfc; --ink:#16181c; --sub:#5c626c; --faint:#9aa1ab;
+    --band-line:#7b828c; --mono:Consolas,"Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);overflow:hidden;
+       font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+       font-size:13px;line-height:1.4}
+
+  #stage{position:fixed;inset:0;overflow:hidden;cursor:grab;user-select:none;
+         background-color:var(--bg);
+         background-image:radial-gradient(#dde2ea 1px, transparent 1px);background-size:22px 22px}
+  #stage.grabbing{cursor:grabbing}
+  #inner{position:absolute;left:0;top:0;width:max-content;transform-origin:0 0;padding:14px 18px 18px}
+
+  #hud{position:fixed;right:12px;bottom:12px;z-index:6;display:flex;gap:6px;align-items:center;
+       background:#fff;border:1px solid #d3d7dd;border-radius:6px;padding:4px 6px;
+       box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:11px;color:#3a3f47}
+  #hud button{font:inherit;border:1px solid #d3d7dd;background:#fff;border-radius:4px;
+              padding:1px 8px;cursor:pointer;color:inherit}
+  #hud button:hover{background:#f3f5f8}
+  #hud .pct{font-family:var(--mono);font-size:10px;min-width:42px;text-align:center}
+  #hud .tip{color:var(--faint);border-left:1px solid #e3e6ea;padding-left:7px;margin-left:2px}
+
+  header.page{width:1920px;margin:0 0 10px}
+  h1{display:inline-block;background:var(--ink);color:#fff;font-size:20px;font-weight:800;
+     letter-spacing:.01em;padding:4px 15px 5px}
+  .meta{margin-top:5px;color:var(--sub);font-size:11.5px}
+  .meta b{color:var(--ink)}
+  #ctlbar{position:absolute;top:12px;left:18px;z-index:5;display:flex;flex-direction:column;
+          gap:7px;align-items:flex-start;background:rgba(251,251,252,.93);border:1px solid #d3d7dd;
+          border-radius:8px;padding:9px 11px;box-shadow:0 2px 6px rgba(0,0,0,.09);
+          max-width:calc(100vw - 40px)}
+  .flows{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .phases{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .pchip{border:1.4px solid var(--ink);background:#fff;border-radius:6px;padding:7px 14px 7px 9px;
+         font-size:13px;font-weight:700;cursor:pointer;display:flex;gap:8px;align-items:center;
+         font-family:inherit;line-height:1.15}
+  .pchip .pno{font-family:var(--mono);font-size:11px;font-weight:700;background:var(--ink);color:#fff;
+              border-radius:4px;padding:2px 7px}
+  .pchip .ptag{font-family:inherit;font-size:10.5px;font-weight:400;color:var(--sub)}
+  .pchip.on .pno{background:#fff;color:var(--ink)}
+  .pchip:hover{background:#f3f5f8}
+  .pchip.on{background:var(--ink);color:#fff}
+  .pchip.on .ptag{color:#c8ccd2}
+  .phint{font-size:10.5px;color:var(--faint);margin-left:2px;max-width:640px}
+  .node .ph{font-family:var(--mono);font-size:9px;background:var(--ink);color:#fff;padding:0 5px}
+  #wrap.pfilter .node.poff{opacity:.12}
+  #wrap.pfilter .band.poff{opacity:.18}
+  #wrap.pfilter #wires path.poff,#wrap.pfilter #labels text.poff{opacity:.05}
+  .fchip{border:1.2px solid var(--ink);background:#fff;border-radius:3px;padding:1px 9px;
+         font-size:11px;cursor:pointer;display:flex;gap:5px;align-items:center}
+  .fchip .fno{font-family:var(--mono);font-size:9.5px;color:var(--sub)}
+  .fchip:hover{background:#f3f5f8}
+  .fchip.act{background:var(--ink);color:#fff}
+  .fchip.act .fno{color:#c8ccd2}
+
+  #wrap{position:relative;width:1920px;height:760px}
+  #wires{position:absolute;inset:0;z-index:1;pointer-events:none}
+  #wires path{fill:none;stroke:var(--ink);stroke-width:1.15;opacity:.5;stroke-linejoin:round;
+              transition:opacity .18s ease, stroke-width .18s ease}
+  #wires path.proto0{stroke-dasharray:5 4;opacity:.38}
+  #labels{position:absolute;inset:0;z-index:3;pointer-events:none}
+  #labels text{font-size:9.5px;fill:#4b5563;paint-order:stroke;stroke:var(--bg);stroke-width:4.5px;
+              font-weight:600;transition:opacity .18s ease}
+  #wrap.focus #wires path,#wrap.focus #labels text{opacity:.06}
+  #wrap.focus #wires path.on{opacity:.95;stroke-width:1.9}
+  #wrap.focus #labels text.on{opacity:1}
+
+  .node{position:absolute;background:#fff;border:1.2px solid var(--ink);border-radius:5px;
+        padding:7px 9px;cursor:pointer;z-index:2;
+        transition:opacity .18s ease, box-shadow .18s ease}
+  #wrap.focus .node{opacity:.22}
+  #wrap.focus .node.lit{opacity:1;box-shadow:0 0 0 1.6px var(--ink)}
+  #wrap.focus .node.pinned{box-shadow:0 0 0 2.4px var(--ink)}
+  .node .nm{font-weight:700;font-size:12.5px;line-height:1.2}
+  .node .nt{font-size:9.5px;color:var(--sub);line-height:1.3;margin-top:2px}
+  .node .bd{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;align-items:center}
+  .node .uc{font-family:var(--mono);font-size:9px;border:1px solid var(--ink);padding:0 5px}
+  .node .kd{font-family:var(--mono);font-size:9px;border:1px solid var(--faint);
+            color:var(--sub);padding:0 5px;background:#f4f6f8}
+  .node.store{background:repeating-linear-gradient(135deg,#fff 0 6px,#f4f6f8 6px 12px)}
+  .node.bus{background:#eef1f5;border-width:1.5px;display:flex;align-items:center;gap:10px;
+            padding:0 16px}
+  .node.bus .nm{font-size:13px}
+  .node.bus .nt{margin-top:0;font-size:9.5px}
+  .node.ext,.node.face{text-align:center}
+  .node.ext .st,.node.face .st{font-family:var(--mono);font-size:9px;color:var(--sub);
+            letter-spacing:.02em;margin-top:1px}
+  .node.ghost{border-style:dashed;color:var(--sub)}
+
+  #boundary{position:absolute;z-index:0;border:1.5px dashed var(--faint);border-radius:5px}
+  #boundary>h2{position:absolute;top:-10px;left:22px;background:var(--bg);border:1px solid var(--ink);
+               padding:2px 12px;font-size:11.5px;font-weight:700;letter-spacing:.05em}
+  .band{position:absolute;z-index:0;border:1.3px dashed var(--band-line);border-radius:4px;
+        transition:opacity .18s ease}
+  #wrap.focus .band{opacity:.3}
+  #wrap.focus .band.lit{opacity:1}
+  .band>h3{position:absolute;top:-9px;left:14px;background:var(--bg);border:1px solid var(--ink);
+           padding:1px 9px;font-size:10.5px;font-weight:700;letter-spacing:.03em;white-space:nowrap;
+           display:flex;gap:6px;align-items:center}
+  .band>h3 .cnt{font-family:var(--mono);font-weight:400;font-size:9px;color:var(--sub)}
+  .band .btag{position:absolute;top:9px;right:14px;font-size:9.5px;color:var(--sub)}
+
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="ctlbar"><div class="flows" id="flows"></div><div class="phases" id="phases"></div></div>
+  <div id="inner">
+    <header class="page">
+      <h1>System Architecture</h1>
+      <div class="meta">PokeClip · 배포 프로그램 <b>7</b> · 데이터 저장소 <b>4</b> · 외부 <b>4</b> · 연결 <b>20</b> · v1.0 — ③ 서비스 블록 21개를 <b>실제 실행되는 프로그램</b>으로 묶고, 그 사이 <b>프로토콜</b>과 <b>저장소</b>를 드러낸다 · AWS 배치는 ⑤ 클라우드 아키텍처로<br>
+      상자 = 하나의 실행 단위(런타임 뱃지) · 빗금 = 저장소 · 회색 가로 막대 = 이벤트 버스(Kafka) · 실선 = 내부 프로토콜 · 점선 = 클라이언트·외부 연동 · 저장소·버스로 향하는 선은 그 시스템의 프로토콜을 씀(Kafka 토픽 · JDBC · Redis · S3 API) · 상자·흐름 칩을 누르면 관련 연결만 남습니다</div>
+    </header>
+    <div id="wrap">
+      <svg id="wires"></svg>
+      <svg id="labels"></svg>
+    </div>
+  </div>
+</div>
+
+<div id="hud">
+  <button type="button" id="btnFit">맞춤</button>
+  <button type="button" id="btnOut">−</button>
+  <span class="pct" id="zoomPct">100%</span>
+  <button type="button" id="btnIn">＋</button>
+  <span class="tip">드래그 이동 · 휠 스크롤 · Ctrl+휠 확대</span>
+</div>
+
+<script>
+/* ===== 좌표 체계 ===== */
+const BX = 206, BY = 0, BW = 1520, BH = 690;   /* 시스템 경계 */
+const LSIDE = 0, RSIDE = 1748;                  /* 클라이언트(좌) · 외부(우) 열 */
+const BANDX = BX + 30, BANDW = 1460;
+
+/* 밴드(가로 계층) */
+const BANDS = [
+  {key:"rt",  title:"실시간 수집 · 감지", tag:"방송 중 — 송출·채팅에서 카드까지 목표 3초", y:30,  h:172},
+  {key:"app", title:"애플리케이션 · 처리", tag:"요청 처리 · 비동기 작업",                   y:270, h:184},
+  {key:"data",title:"데이터 계층",         tag:"관계형 · 캐시 · 객체 스토리지",             y:474, h:184},
+];
+const bandOf = k => BANDS.find(b=>b.key===k);
+
+/* ── 개발 단계 — ① 유스케이스가 단일 기준, ④에선 각 프로그램이 담은 ③ 블록의 가장 이른 단계를 물려받는다
+      (③→④는 N:M 수동 매핑이라 프로그램마다 단계를 명시한다) ── */
+const PHASES = {
+  1:{nm:"핵심 루프",   tag:"자동 감지 핵심 루프 — 시스템 골격 전체가 여기서 필요하다",
+     note:"7개 프로그램 · 저장소 전부 · 결제 외 외부 연동"},
+  2:{nm:"협업 · 자산", tag:"새 프로그램 없음 — 기존 서비스 내부 기능만 확장",
+     note:"편집자 협업·승인·AI 자막·보관함 관리 등은 웹·Core·워커 안에서 자란다"},
+  3:{nm:"상용화",      tag:"결제(PG) 연동이 유일하게 새로 붙는 시스템 요소",
+     note:"구독·종량 과금 → 결제 시스템"},
+};
+
+/* ===== 프로그램 · 저장소 (경계 안) ===== */
+/* x,y = 좌상단 · w,h = 크기 · p = 단계 · svc = 담은 ③ 블록 · tech = 런타임 */
+const NODES = [
+  /* 실시간 수집 · 감지 */
+  {id:"media",  b:"rt",  x:246, y:70,  w:250, h:110, p:1, kind:"prog", tech:"Go · FFmpeg",
+   nm:"미디어 서버", uc:"UC-04·11·15·18·21",
+   nt:"SRT 수신 · 트랙 분리(영상1+오디오≤10) · 되감기 버퍼 1h · 저지연 재생 · 종료 시 VOD 전환"},
+  {id:"chat",   b:"rt",  x:556, y:70,  w:230, h:110, p:1, kind:"prog", tech:"Spring WebFlux",
+   nm:"채팅 수집기", uc:"UC-13",
+   nt:"치지직 / SOOP 채팅 실시간 수집 → 이벤트 버스로 발행 · 수집 대상은 Core가 방송 시작 시 지정"},
+  {id:"detect", b:"rt",  x:846, y:70,  w:250, h:110, p:1, kind:"prog", tech:"Kafka Streams",
+   nm:"하이라이트 감지기", uc:"UC-14",
+   nt:"채팅 집계 · 피크 감지 → 카드 자동 생성 (입력은 채팅뿐, 목표 3초)"},
+
+  /* 이벤트 버스 — 저장소이자 프로그램 사이 전송로 */
+  {id:"kafka",  b:null,  x:470, y:212, w:900, h:44, p:1, kind:"bus",
+   nm:"Kafka", nt:"이벤트 버스 · 채팅 토픽 · 감지 결과 · 렌더·업로드 작업 큐"},
+
+  /* 애플리케이션 · 처리 */
+  {id:"core",   b:"app", x:396, y:300, w:580, h:122, p:1, kind:"prog", tech:"Java · Spring",
+   nm:"Core API", uc:"UC-01~03·05~10·12·16·17·19·20·22·24·28~32",
+   nt:"인증 · 권한 · 방송 · 카드·타임라인 · 편집 메타 · 보관함 · 승인 · 템플릿 · 구독·과금 · 알림 · 채널 연동 — REST + SSE"},
+  {id:"worker", b:"app", x:1096,y:300, w:290, h:122, p:1, kind:"prog", tech:"FFmpeg 워커",
+   nm:"통합 작업 워커", uc:"UC-22·23·25·26·27",
+   nt:"작업 큐 소비 · 렌더 · AI 자막 · 썸네일 · 유튜브 업로드(재인증·재시도) — 비동기"},
+
+  /* 데이터 계층 */
+  {id:"db",     b:"data",x:300, y:504, w:230, h:110, p:1, kind:"store",
+   nm:"MySQL", uc:"관계형",
+   nt:"계정·권한·방송·카드·편집 메타·승인·구독·템플릿·채널 토큰"},
+  {id:"redis",  b:"data",x:600, y:504, w:200, h:110, p:1, kind:"store",
+   nm:"Redis", uc:"캐시·세션",
+   nt:"세션 · 실시간 카드·처리 상태 조회 캐시"},
+  {id:"s3",     b:"data",x:1096,y:504, w:290, h:110, p:1, kind:"store",
+   nm:"S3", uc:"객체",
+   nt:"되감기 세그먼트 · VOD · 클립·편집본 산출물 · 썸네일"},
+];
+
+/* ===== 클라이언트(좌) · 외부 시스템(우) ===== */
+const SIDES = [
+  {id:"plugin", s:"L", p:1, y:70,  nm:"OBS 플러그인", st:"C++20 · 로컬",   nt:"스트리머 로컬 앱 · SRT 송출 · 핫키 마킹"},
+  {id:"web",    s:"L", p:1, y:322, nm:"웹",           st:"TypeScript · React", nt:"스트리머·편집자 브라우저 앱 · 화면 렌더 · 편집 미리보기(클라이언트) · 재생"},
+  {id:"ex-chat",  s:"R", p:1, y:70,  nm:"치지직 / SOOP", st:"«external»", nt:"방송 플랫폼 · 채팅 소스"},
+  {id:"ex-yt",    s:"R", p:1, y:322, nm:"YouTube",     st:"«external»", nt:"클립 업로드 · CC 등록"},
+  {id:"ex-google",s:"R", p:1, y:470, nm:"Google",      st:"«external»", nt:"OAuth 로그인"},
+  {id:"ex-pg",    s:"R", p:3, y:560, nm:"결제 시스템",  st:"«external · PG»", nt:"구독 결제 · 종량 과금"},
+];
+
+/* ===== 흐름 ===== */
+const FLOWS = {
+  1:{nm:"실시간", tag:"송출·채팅 → 감지 → 카드"},
+  2:{nm:"제작",   tag:"작업 큐 → 렌더 → 업로드"},
+  3:{nm:"저장소", tag:"DB · 캐시 · 객체"},
+  0:{nm:"클라이언트·외부", tag:"플러그인·웹 · 외부 연동"},
+};
+
+/* ===== 렌더 ===== */
+const wrap = document.getElementById("wrap");
+const svg  = document.getElementById("wires");
+const ALL = [...NODES, ...SIDES];
+const byId = id => ALL.find(n=>n.id===id);
+const phaseOf = id => byId(id).p;
+
+const boundary = document.createElement("div");
+boundary.id = "boundary";
+Object.assign(boundary.style,{left:BX+"px",top:BY+"px",width:BW+"px",height:BH+"px"});
+boundary.innerHTML = "<h2>PokeClip 배포 경계</h2>";
+wrap.appendChild(boundary);
+
+for(const b of BANDS){
+  const el = document.createElement("div");
+  el.className = "band"; el.id = "band-"+b.key; el.dataset.band = b.key;
+  Object.assign(el.style,{left:BANDX+"px",top:b.y+"px",width:BANDW+"px",height:b.h+"px"});
+  const mem = NODES.filter(x=>x.b===b.key);
+  el.dataset.phase = Math.min(...mem.map(x=>x.p));
+  el.innerHTML = `<h3>${b.title} <span class="cnt">${mem.length}</span></h3><div class="btag">${b.tag}</div>`;
+  wrap.appendChild(el);
+}
+
+for(const n of NODES){
+  const el = document.createElement("div");
+  el.className = "node " + (n.kind==="store"?"store":n.kind==="bus"?"bus":"prog");
+  el.id = n.id; el.dataset.node = n.id; el.dataset.phase = n.p;
+  Object.assign(el.style,{left:n.x+"px",top:n.y+"px",width:n.w+"px",height:n.h+"px"});
+  if(n.kind==="bus"){
+    el.innerHTML = `<div class="nm">${n.nm}</div><div class="nt">${n.nt}</div>`
+      + `<div class="bd" style="margin:0"><span class="ph">P${n.p}</span></div>`;
+  } else {
+    el.innerHTML = `<div class="nm">${n.nm}</div><div class="nt">${n.nt}</div>`
+      + `<div class="bd">${n.tech?`<span class="kd">${n.tech}</span>`:""}`
+      + `${n.uc?`<span class="uc">${n.uc}</span>`:""}`
+      + `<span class="ph">P${n.p}</span></div>`;
+  }
+  wrap.appendChild(el);
+}
+
+for(const s of SIDES){
+  const el = document.createElement("div");
+  el.className = "node " + (s.s==="L"?"face":"ext");
+  el.id = s.id; el.dataset.node = s.id; el.dataset.phase = s.p;
+  Object.assign(el.style,{left:(s.s==="L"?LSIDE:RSIDE)+"px",top:s.y+"px",width:"156px"});
+  el.innerHTML = `<div class="nm">${s.nm}</div><div class="st">${s.st}</div><div class="nt">${s.nt}</div>`;
+  wrap.appendChild(el);
+}
+
+/* ===== 포트 ===== */
+const box = id => {
+  const e = document.getElementById(id);
+  return {l:e.offsetLeft, t:e.offsetTop, r:e.offsetLeft+e.offsetWidth, b:e.offsetTop+e.offsetHeight,
+          cx:e.offsetLeft+e.offsetWidth/2, cy:e.offsetTop+e.offsetHeight/2};
+};
+const P = (id, side, o=0) => {
+  const q = box(id);
+  if(side==="l") return {x:q.l, y:q.cy+o};
+  if(side==="r") return {x:q.r, y:q.cy+o};
+  if(side==="t") return {x:q.cx+o, y:q.t};
+  if(side==="b") return {x:q.cx+o, y:q.b};
+};
+const pt = (x,y) => ({x,y});
+
+/* ===== 연결 (f=흐름 · proto=프로토콜 라벨) ===== */
+const EDGES = [
+  /* ── 클라이언트 → 백엔드 ── */
+  {f:0, l:"SRT 송출", p:[P("plugin","r",-6), pt(190,box("plugin").cy-6),
+        pt(190,box("media").cy-6), P("media","l",-6)]},
+  {f:0, l:"핫키 마킹 · REST", p:[P("plugin","r",6), pt(184,box("plugin").cy+6),
+        pt(184,box("core").cy-40), P("core","l",-40)]},
+  {f:0, l:"REST", p:[P("web","r",-6), pt(196,box("web").cy-6),
+        pt(196,box("core").cy), P("core","l",0)]},
+  {f:0, l:"SSE 실시간 갱신", to:"web", p:[P("core","l",40), pt(206,box("core").cy+40),
+        pt(206,box("web").cy+18), P("web","r",18)]},
+  {f:0, l:"저지연 재생 (LL-HLS)", p:[P("web","r",6), pt(178,box("web").cy+6),
+        pt(178,box("media").cy+30), P("media","l",30)]},
+
+  /* ── 실시간 내부 (이벤트 버스) ── */
+  {f:1, l:"방송 시작·종료 (REST)", p:[P("media","b",50), pt(box("media").cx+50, box("core").t)]},
+  {f:1, l:"채팅 이벤트", p:[P("chat","b"), pt(box("chat").cx, box("kafka").t)]},
+  {f:1, l:"채팅 구독 · 감지 결과", both:true, p:[P("detect","b"), pt(box("detect").cx, box("kafka").t)]},
+  {f:1, l:"카드 생성 (감지 결과)", to:"core", p:[pt(box("core").cx-30, box("kafka").b),
+        pt(box("core").cx-30, box("core").t)]},
+
+  /* ── 제작 (작업 큐 → 워커) ── */
+  {f:2, l:"렌더·업로드 작업", to:"kafka", p:[pt(box("core").cx+30, box("core").t),
+        pt(box("core").cx+30, box("kafka").b)]},
+  {f:2, l:"작업 소비", to:"worker", p:[pt(box("worker").cx, box("kafka").b),
+        pt(box("worker").cx, box("worker").t)]},
+  {f:2, l:"작업 상태 보고 (REST)", to:"core", p:[P("worker","l",-22), P("core","r",-22)]},
+
+  /* ── 저장소 ── */
+  {f:3, l:"JDBC", p:[P("core","b",-170), pt(box("core").cx-170, 466),
+        pt(box("db").cx, 466), P("db","t")]},
+  {f:3, l:"세션 · 캐시", p:[P("core","b",-80), pt(box("core").cx-80, 480),
+        pt(box("redis").cx, 480), P("redis","t")]},
+  {f:3, l:"세그먼트 · VOD", p:[P("media","b",-90), pt(box("media").cx-90, 640),
+        pt(box("s3").cx, 640), P("s3","b")]},
+  {f:3, l:"원본 · 산출물", both:true, p:[P("worker","b"), pt(box("worker").cx, box("s3").t)]},
+
+  /* ── 외부 연동 ── */
+  {f:0, l:"채팅 수집 (WebSocket)", both:true, p:[P("chat","t"), pt(box("chat").cx,50),
+        pt(1712,50), pt(1712,box("ex-chat").cy), P("ex-chat","l")]},
+  {f:0, l:"업로드 · CC (YouTube API)", both:true, p:[P("worker","r"), pt(1712,box("worker").cy),
+        pt(1712,box("ex-yt").cy), P("ex-yt","l")]},
+  {f:0, l:"OAuth", both:true, p:[P("core","r",30), pt(1040,box("core").cy+30),
+        pt(1040,485), pt(1730,485), P("ex-google","l")]},
+  {f:0, l:"구독 결제 (PG API)", both:true, p:[P("core","b",164), pt(box("core").cx+164, 644),
+        pt(1730,644), pt(1730,box("ex-pg").cy), P("ex-pg","l")]},
+];
+
+/* ===== 배선 그리기 ===== */
+const NS = "http://www.w3.org/2000/svg";
+svg.setAttribute("width", wrap.offsetWidth);
+svg.setAttribute("height", wrap.offsetHeight);
+svg.innerHTML = `<defs>
+  <marker id="ah" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M1,1 L7.5,4 L1,7" fill="none" stroke="#16181c" stroke-width="1.2"/></marker>
+  <marker id="ah2" markerWidth="9" markerHeight="9" refX="1.5" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M8,1 L1.5,4 L8,7" fill="none" stroke="#16181c" stroke-width="1.2"/></marker>
+</defs>`;
+
+const labelSvg = document.getElementById("labels");
+labelSvg.setAttribute("width", wrap.offsetWidth);
+labelSvg.setAttribute("height", wrap.offsetHeight);
+const labelQueue = [];
+
+/* 각 연결의 양 끝이 어느 노드인지 — 강조·단계에 쓴다 */
+function endsOf(e){
+  const hit = p => {
+    for(const el of document.querySelectorAll(".node")){
+      const q = box(el.id);
+      if(p.x>=q.l-1 && p.x<=q.r+1 && p.y>=q.t-1 && p.y<=q.b+1) return el.id;
+    }
+    return null;
+  };
+  return [hit(e.p[0]), hit(e.p[e.p.length-1])].filter(Boolean);
+}
+
+EDGES.forEach((e,i)=>{
+  e.ends = e.ends ?? endsOf(e);
+  if(e.ends.length < 2) throw new Error(`끝점이 노드에 닿지 않는 연결: #${i} ${e.l??""}`);
+  const d = e.p.map((p,k)=>(k?"L":"M")+" "+p.x+" "+p.y).join(" ");
+  const path = document.createElementNS(NS,"path");
+  path.setAttribute("d", d);
+  path.setAttribute("marker-end","url(#ah)");
+  if(e.both) path.setAttribute("marker-start","url(#ah2)");
+  if(e.f===0 || e.proto0) path.classList.add("proto0");
+  path.dataset.flow = e.f; path.dataset.idx = i; path.dataset.ends = e.ends.join(",");
+  svg.appendChild(path);
+  if(e.l) labelQueue.push({edge:e, idx:i});
+});
+
+/* ---------- 라벨 배치: 블록·다른 라벨을 피해 앉힌다 ---------- */
+const nodeBoxes = () => [...document.querySelectorAll(".node")].map(el => ({
+  l:el.offsetLeft, t:el.offsetTop, r:el.offsetLeft+el.offsetWidth, b:el.offsetTop+el.offsetHeight
+}));
+const rectOf = t => { const b = t.getBBox(); return {l:b.x, t:b.y, r:b.x+b.width, b:b.y+b.height}; };
+const clash = (a, b, pad=2) =>
+  Math.min(a.r,b.r+pad)-Math.max(a.l,b.l-pad) > 0 && Math.min(a.b,b.b+pad)-Math.max(a.t,b.t-pad) > 0;
+
+const placed = [];
+const blocks = nodeBoxes();
+for(const {edge, idx} of labelQueue){
+  const t = document.createElementNS(NS,"text");
+  t.setAttribute("text-anchor","middle");
+  t.textContent = edge.l;
+  t.dataset.flow = edge.f; t.dataset.idx = idx; t.dataset.ends = edge.ends.join(",");
+  labelSvg.appendChild(t);
+
+  const segs = [];
+  for(let k=1;k<edge.p.length;k++){
+    const a = edge.p[k-1], b = edge.p[k];
+    segs.push({a, b, len:Math.abs(b.x-a.x)+Math.abs(b.y-a.y), horiz:a.y===b.y});
+  }
+  segs.sort((p,q)=>q.len-p.len);
+  const cands = [];
+  for(const s of segs){
+    for(const f of [.5,.35,.65,.22,.78]){
+      const x = s.a.x + (s.b.x-s.a.x)*f, y = s.a.y + (s.b.y-s.a.y)*f;
+      if(s.horiz) cands.push({x, y:y-4});
+      else { cands.push({x:x+3, y}); cands.push({x:x-3, y}); }
+    }
+  }
+
+  const free = (c, pad=2) => {
+    t.setAttribute("x", c.x); t.setAttribute("y", c.y);
+    const r = rectOf(t);
+    return !blocks.some(bx=>clash(r,bx,pad)) && !placed.some(pr=>clash(r,pr,pad));
+  };
+
+  let chosen = cands[0], clean = false;
+  for(const c of cands){ if(free(c)){ chosen = c; clean = true; break; } }
+  if(!clean){
+    const base = cands[0];
+    outer:
+    for(const dy of [3,-3,4,-4,6,-6,10,-10,16,-16,24,-24,32,-32,56,-56,72,-72]){
+      for(const dx of [0,-70,70,-140,140,-180,180]){
+        const c = {x:base.x+dx, y:base.y+dy};
+        if(free(c, 0)){ chosen = c; clean = true; break outer; }
+      }
+    }
+  }
+  t.setAttribute("x", chosen.x); t.setAttribute("y", chosen.y);
+  if(!clean) t.classList.add("crowded");
+  placed.push(rectOf(t));
+}
+
+/* ===== 흐름 칩 ===== */
+const flowsEl = document.getElementById("flows");
+for(const [no,f] of Object.entries(FLOWS)){
+  const c = document.createElement("button");
+  c.type = "button"; c.className = "fchip"; c.dataset.flow = no;
+  c.innerHTML = `<span class="fno">${no==="0"?"·":no}</span>${f.nm}<span class="fno">${f.tag}</span>`;
+  flowsEl.appendChild(c);
+}
+
+/* ===== 캔버스 이동·확대 ===== */
+const stage = document.getElementById("stage"), inner = document.getElementById("inner");
+const zoomPct = document.getElementById("zoomPct");
+const ZMIN = .08, ZMAX = 3;
+let vx = 0, vy = 0, vs = 1;
+const applyView = () => {
+  inner.style.transform = `translate(${vx}px, ${vy}px) scale(${vs})`;
+  zoomPct.textContent = Math.round(vs*100)+"%";
+};
+function fit(){
+  const iw = inner.scrollWidth, ih = inner.scrollHeight;
+  const aw = stage.clientWidth, ah = stage.clientHeight;
+  if(!iw||!ih||!aw||!ah) return;
+  vs = Math.max(ZMIN, Math.min(Math.min(aw/iw, ah/ih)*.98, ZMAX));
+  vx = (aw-iw*vs)/2; vy = (ah-ih*vs)/2; applyView();
+}
+function zoomAt(fct,cx,cy){
+  const nx = Math.max(ZMIN, Math.min(vs*fct, ZMAX));
+  if(nx===vs) return;
+  vx = cx-(cx-vx)*(nx/vs); vy = cy-(cy-vy)*(nx/vs); vs = nx; applyView();
+}
+const zoomCenter = f => zoomAt(f, stage.clientWidth/2, stage.clientHeight/2);
+
+let drag = null, dragged = false;
+stage.addEventListener("mousedown", e=>{
+  if(e.target.closest("#hud")||e.target.closest("#ctlbar")) return;
+  drag = {x:e.clientX,y:e.clientY,vx,vy}; dragged = false; stage.classList.add("grabbing");
+});
+window.addEventListener("mousemove", e=>{
+  if(!drag) return;
+  const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+  if(Math.abs(dx)>3||Math.abs(dy)>3) dragged = true;
+  vx = drag.vx+dx; vy = drag.vy+dy; applyView();
+});
+window.addEventListener("mouseup", ()=>{ drag = null; stage.classList.remove("grabbing"); });
+stage.addEventListener("contextmenu", e=>e.preventDefault());
+stage.addEventListener("wheel", e=>{
+  e.preventDefault();
+  const r = stage.getBoundingClientRect();
+  if(e.ctrlKey) zoomAt(Math.exp(-e.deltaY*.0016), e.clientX-r.left, e.clientY-r.top);
+  else { vx -= e.deltaX; vy -= e.deltaY; applyView(); }
+},{passive:false});
+document.getElementById("btnFit").addEventListener("click", fit);
+document.getElementById("btnIn").addEventListener("click", ()=>zoomCenter(1.25));
+document.getElementById("btnOut").addEventListener("click", ()=>zoomCenter(1/1.25));
+
+/* ===== 강조 ===== */
+let pinned = null;
+const lines = () => [...svg.querySelectorAll("path[data-idx]"), ...labelSvg.querySelectorAll("text[data-idx]")];
+
+function litFrom(near){
+  document.querySelectorAll(".node").forEach(n=>n.classList.toggle("lit", near.has(n.id)));
+  document.querySelectorAll(".band").forEach(b=>{
+    const mem = NODES.filter(n=>n.b===b.dataset.band).map(n=>n.id);
+    b.classList.toggle("lit", mem.some(id=>near.has(id)));
+  });
+}
+function clearFocus(){
+  wrap.classList.remove("focus");
+  lines().forEach(l=>l.classList.remove("on"));
+  document.querySelectorAll(".lit,.pinned").forEach(e=>e.classList.remove("lit","pinned"));
+}
+function focusNode(id){
+  wrap.classList.add("focus");
+  const near = new Set([id]);
+  lines().forEach(l=>{
+    const ends = l.dataset.ends.split(",");
+    const on = ends.includes(id);
+    l.classList.toggle("on", on);
+    if(on) ends.forEach(x=>near.add(x));
+  });
+  litFrom(near);
+}
+function focusFlow(no){
+  wrap.classList.add("focus");
+  const near = new Set();
+  lines().forEach(l=>{
+    const on = l.dataset.flow === no;
+    l.classList.toggle("on", on);
+    if(on) l.dataset.ends.split(",").forEach(x=>near.add(x));
+  });
+  litFrom(near);
+  document.querySelectorAll(".fchip").forEach(c=>c.classList.toggle("act", c.dataset.flow===no));
+}
+function showPinned(){
+  if(!pinned) return;
+  if(pinned.kind==="node"){ focusNode(pinned.id); document.getElementById(pinned.id).classList.add("pinned"); }
+  else focusFlow(pinned.no);
+}
+function setPin(next){
+  const same = pinned && next && pinned.kind===next.kind &&
+    (next.kind==="node" ? pinned.id===next.id : pinned.no===next.no);
+  pinned = same ? null : next;
+  clearFocus();
+  document.querySelectorAll(".fchip").forEach(c=>c.classList.remove("act"));
+  showPinned();
+}
+
+document.addEventListener("mouseover", e=>{
+  if(pinned) return;
+  const n = e.target.closest(".node"); if(n) return focusNode(n.id);
+  const c = e.target.closest(".fchip"); if(c) return focusFlow(c.dataset.flow);
+});
+document.addEventListener("mouseout", e=>{
+  if(pinned) return;
+  if(e.target.closest(".node")||e.target.closest(".fchip")) clearFocus();
+});
+document.addEventListener("click", e=>{
+  if(dragged){ dragged = false; return; }
+  if(e.target.closest("#hud")) return;
+  const c = e.target.closest(".fchip"); if(c) return setPin({kind:"flow", no:c.dataset.flow});
+  const n = e.target.closest(".node"); if(n) return setPin({kind:"node", id:n.id});
+  setPin(null);
+});
+document.addEventListener("keydown", e=>{
+  if(e.key!=="Escape") return;
+  setPin(null); psel.clear(); applyPhase();
+});
+
+/* ---------- 개발 단계 필터 (여러 개 동시 선택) ---------- */
+const phasesEl = document.getElementById("phases");
+const psel = new Set();
+const phaseOfEnd = id => { const n = byId(id); return n ? n.p : 1; };
+for(const [no,ph] of Object.entries(PHASES)){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "pchip"; b.dataset.phase = no;
+  b.title = ph.note;
+  b.innerHTML = `<span class="pno">P${no}</span>${ph.nm}<span class="ptag">${ph.tag}</span>`;
+  phasesEl.appendChild(b);
+}
+phasesEl.insertAdjacentHTML("beforeend",
+  `<span class="phint">그 단계에 <b>새로 만드는</b> 시스템 요소만 남습니다 · 셋 다 켜면 전체 · ④ 골격은 P1에 거의 완성이라 P2는 새 요소가 없습니다(기존 프로그램 내부 확장)</span>`);
+
+function applyPhase(){
+  const on = psel.size > 0;
+  wrap.classList.toggle("pfilter", on);
+  document.querySelectorAll(".pchip").forEach(c=>c.classList.toggle("on", psel.has(c.dataset.phase)));
+  document.querySelectorAll(".node[data-phase]").forEach(n=>
+    n.classList.toggle("poff", on && !psel.has(n.dataset.phase)));
+  document.querySelectorAll(".band[data-phase]").forEach(n=>
+    n.classList.toggle("poff", on && !psel.has(n.dataset.phase)));
+  lines().forEach(l=>{
+    /* 연결 단계 = 양 끝 중 늦은 쪽 — 두 끝이 다 있어야 이을 수 있다 */
+    const p = String(Math.max(...l.dataset.ends.split(",").map(phaseOfEnd)));
+    l.classList.toggle("poff", on && !psel.has(p));
+  });
+}
+phasesEl.addEventListener("click", e=>{
+  const c = e.target.closest(".pchip"); if(!c) return;
+  psel.has(c.dataset.phase) ? psel.delete(c.dataset.phase) : psel.add(c.dataset.phase);
+  applyPhase();
+});
+
+window.addEventListener("resize", ()=>{ clearTimeout(window.__t); window.__t = setTimeout(fit,120); });
+fit();
+</script>
+</body>
+</html>
