@@ -107,7 +107,7 @@
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.6 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 v3.1 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · depth 1 <b>4갈래</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔) · 노드 <b>165</b> · v2.6 · 2026-07-23 (Codex 최종 검증 결함 0건) — 웹 앱 진입: 구글 로그인 → 글로벌 내비 3그룹 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
   <div class="phases" id="phases"></div>
 </header>
 
@@ -158,14 +158,14 @@
 
 <script>
 const COLS = [
-  {n:"공개 웹", p:3, s:"비로그인 · 누구나 접근", c:[
-    {n:"랜딩 · 서비스 소개", scr:true, c:[
+  {n:"공개 웹", p:1, s:"비로그인 · 누구나 접근", c:[
+    {n:"랜딩 · 서비스 소개", scr:true, p:3, c:[
       {n:"핵심 가치", s:"방송이 끝나기 전에 클립이 올라간다"},
       {n:"기능 소개", s:"자동 하이라이트 · 멀티트랙 편집 · 원클릭 업로드"},
       {n:"지원 플랫폼", s:"방송 치지직 · SOOP → 업로드 유튜브"},
       {n:"데모 · 샘플 클립"},
     ]},
-    {n:"요금 안내", scr:true, c:[
+    {n:"요금 안내", scr:true, p:3, c:[
       {n:"구독 플랜 비교", u:"31"},
       {n:"종량 요금 기준", tbd:true, s:"기준 미정"},
       {n:"무료 체험 · 무료 티어", tbd:true, s:"사업 판단 미정"},
@@ -176,17 +176,17 @@ const COLS = [
       {n:"설치 가이드 · 시스템 요구사항"},
       {n:"릴리스 노트"},
     ]},
-    {n:"도움말 · 문의", scr:true, c:[
+    {n:"도움말 · 문의", scr:true, p:3, c:[
       {n:"사용 가이드"},
       {n:"자주 묻는 질문", s:"요금 · 설치 · 편집 전반 (단일 FAQ)"},
       {n:"문의 접수", u:"10", s:"가입 전 · 로그인 후 공통"},
       {n:"공지사항", s:"점검 · 업데이트 안내"},
     ]},
-    {n:"서비스 상태", scr:true, s:"장애·점검 공개 고지", c:[
+    {n:"서비스 상태", scr:true, p:3, s:"장애·점검 공개 고지", c:[
       {n:"기능별 상태", s:"송출 수신 · 편집 · 업로드"},
       {n:"장애 이력 · 진행 상황"},
     ]},
-    {n:"약관 · 정책", scr:true, c:[
+    {n:"약관 · 정책", scr:true, p:3, c:[
       {n:"이용약관"},
       {n:"개인정보처리방침"},
       {n:"환불 · 청약철회 정책", s:"유료 서비스 필수"},
@@ -252,7 +252,7 @@ const COLS = [
       {n:"방송 정보", s:"제목 · 방송일 · VOD 만료일(60일)"},
       {n:"플레이어", s:"챕터(=카드) 탐색 · 시점 이동"},
       {n:"채팅량 그래프", u:"19", s:"수집분 재생 — 하이라이트 탐색용"},
-      {n:"하이라이트 카드 목록", u:"20", s:"만료 카드 재활성화 · 편집기 진입 · 원클릭 업로드 · 숨김·무시"},
+      {n:"하이라이트 카드 목록", u:"20", p:2, s:"만료 카드 재활성화 · 편집기 진입 · 원클릭 업로드 · 숨김·무시"},
     ]},
   ]},
   {n:"클립 제작 · 보관", web:true, p:1, s:"글로벌 내비 2", c:[
@@ -296,8 +296,8 @@ const COLS = [
       {n:"원클릭 지정", u:"26", s:"핫키/카드 자동 업로드에 사용할 템플릿 선택"},
     ]},
   ]},
-  {n:"운영 · 계정", web:true, p:2, s:"글로벌 내비 3", c:[
-    {n:"업로드 · 승인", scr:true, c:[
+  {n:"운영 · 계정", web:true, p:1, s:"글로벌 내비 3", c:[
+    {n:"업로드 · 승인", scr:true, p:2, c:[
       {n:"업로드 상태", u:"27", c:[
         {n:"진행 · 결과"},
         {n:"실패 복구", s:"재인증 · 수동 재시도 · 취소"},
@@ -313,7 +313,7 @@ const COLS = [
     {n:"도움말 · 문의", scr:true, u:"10", s:"공개 웹 화면 공유", c:[
       {n:"내 문의 내역", u:"10", s:"접수 상태 · 답변 확인"},
     ]},
-    {n:"협업 관리", scr:true, c:[
+    {n:"협업 관리", scr:true, p:2, c:[
       {n:"스트리머 접근", tag:"E", u:"05", c:[
         {n:"신청 · 진행 상태"},
         {n:"내 권한 단계", s:"기본 / 직접 업로드 / 원클릭"},
@@ -380,8 +380,9 @@ const PHASES = {
 const phaseOfUC = n => Number(Object.keys(PHASES).find(p=>PHASES[p].ucs.includes(n)));
 /* 노드 단계: UC 배지가 있으면 그중 가장 이른 단계, 없으면 직접 지정한 값, 그것도 없으면 부모에서 물려받음 */
 function phaseOfNode(d, inherited){
+  if(d.p) return d.p;                 /* 직접 지정이 가장 우선 */
   if(d.u) return Math.min(...String(d.u).split("·").map(x=>phaseOfUC(Number(x))));
-  return d.p || inherited || 1;
+  return inherited || 1;
 }
 
 function nodeHTML(d){

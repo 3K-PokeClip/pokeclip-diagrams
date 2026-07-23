@@ -183,8 +183,8 @@ const NODES = [
    nt:"구간·트랙·비율·자막 · 브라우저 미리보기(서버 렌더 없음) · 자동 임시 저장"},
   {id:"mk-render", b:"mk", c:2, r:1, nm:"렌더 · 출력", uc:"UC-22·23",
    nt:"렌더 큐(비동기) · 재출력은 VOD 보관 60일 내"},
-  {id:"mk-store",  b:"mk", c:3, r:1, nm:"보관함", uc:"UC-23·28", kind:"보관 영구", store:true,
-   nt:"클립 · 편집본 영구 보관 · 사용자 삭제"},
+  {id:"mk-store",  b:"mk", c:3, r:1, nm:"보관함", uc:"UC-23·28", kind:"보관 영구", store:true, p:1,
+   nt:"클립 · 편집본 영구 보관 — P1은 저장만, 목록·재편집·삭제는 P2"},
   {id:"mk-upload", b:"mk", c:4, r:1, nm:"업로드", uc:"UC-25·26·27",
    nt:"기본 비공개 · CC 등록 · 실패 시 재인증·재시도"},
   {id:"mk-approve",b:"mk", c:5, r:1, nm:"승인", uc:"UC-29·30",
@@ -257,6 +257,7 @@ for(const n of NODES){
   const el = document.createElement("div");
   el.className = "node" + (n.store?" store":""); el.id = n.id; el.dataset.node = n.id;
   el.dataset.phase = phaseOfBlock(n);
+  if(n.p) el.dataset.phaseFixed = "1";   /* UC 상속을 일부러 덮어쓴 곳 */
   Object.assign(el.style,{left:COL[n.c-1]+"px",top:rowY(n.b,n.r)+"px",width:CW+"px",height:NH+"px"});
   el.innerHTML = `<div class="nm">${n.nm}</div><div class="nt">${n.nt}</div>`
     + `<div class="bd">${n.uc?`<span class="uc">${n.uc}</span>`:""}`
@@ -330,12 +331,12 @@ const EDGES = [
   {f:2, p:[P("mk-render","r"), P("mk-store","l")]},
   {f:2, p:[P("mk-store","r"), P("mk-upload","l")]},
   {f:2, l:"원클릭 지정", p:[P("mk-tpl","t"), P("mk-upload","b")]},
-  {f:2, l:"원클릭 — 카드 액션에서", p:[P("rt-card","r",-20), pt(GX.c34-14, box("rt-card").cy-20),
+  {f:2, ph:2, l:"원클릭 — 카드 액션에서", p:[P("rt-card","r",-20), pt(GX.c34-14, box("rt-card").cy-20),
         pt(GX.c34-14, box("mk-upload").cy+20), P("mk-upload","l",20)]},
-  {f:2, l:"원클릭 — 핫키에서 (카드 화면 거치지 않음)", p:[P("rt-detect","r",30), pt(GX.c23b, box("rt-detect").cy+30),
+  {f:2, ph:2, l:"원클릭 — 핫키에서 (카드 화면 거치지 않음)", p:[P("rt-detect","r",30), pt(GX.c23b, box("rt-detect").cy+30),
         pt(GX.c23b, GY.arMk3), pt(GX.c34c, GY.arMk3), pt(GX.c34c, box("mk-upload").cy-25),
         P("mk-upload","l",-25)]},
-  {f:2, l:"편집본 불러오기 · 재편집", p:[P("mk-store","t"), pt(box("mk-store").cx, GY.mkTop),
+  {f:2, ph:2, l:"편집본 불러오기 · 재편집", p:[P("mk-store","t"), pt(box("mk-store").cx, GY.mkTop),
         pt(box("mk-edit").cx-35, GY.mkTop), P("mk-edit","t",-35)]},
 
   /* ④ 권한 */
@@ -444,6 +445,7 @@ EDGES.forEach((e,i)=>{
   if(e.both) path.setAttribute("marker-start","url(#ah2)");
   if(e.f===0){ path.setAttribute("stroke-dasharray","5 4"); path.setAttribute("opacity",".38"); }
   path.dataset.flow = e.f; path.dataset.idx = i; path.dataset.ends = e.ends.join(",");
+  path.dataset.ph = e.ph || "";
   svg.appendChild(path);
 
   if(e.l) labelQueue.push({edge:e, idx:i});
@@ -464,6 +466,7 @@ for(const {edge, idx} of labelQueue){
   t.setAttribute("text-anchor","middle");
   t.textContent = edge.l;
   t.dataset.flow = edge.f; t.dataset.idx = idx; t.dataset.ends = edge.ends.join(",");
+  t.dataset.ph = edge.ph || "";
   labelSvg.appendChild(t);
 
   /* 후보: 긴 구간부터, 각 구간의 여러 지점 — 세로 구간은 옆으로 비켜 앉힌다 */
@@ -667,7 +670,8 @@ function applyPhase(){
   document.querySelectorAll(".band[data-phase]").forEach(n=>
     n.classList.toggle("poff", on && !psel.has(n.dataset.phase)));
   lines().forEach(l=>{
-    const p = String(Math.max(...l.dataset.ends.split(",").map(phaseOfEnd)));
+    /* 직접 지정한 단계가 있으면 그것, 없으면 양 끝 중 늦은 쪽 — 두 끝이 다 있어야 이을 수 있다 */
+    const p = l.dataset.ph || String(Math.max(...l.dataset.ends.split(",").map(phaseOfEnd)));
     l.classList.toggle("poff", on && !psel.has(p));
   });
 }
