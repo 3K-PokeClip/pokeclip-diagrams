@@ -118,7 +118,7 @@
   <div id="inner">
     <header class="page">
       <h1>Service Architecture</h1>
-      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.4 — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · 큐·DB·프로토콜 등 기술 구조는 ④ 시스템 아키텍처로<br>
+      <div class="meta">PokeClip · 서비스 블록 <b>21</b> · 접점 <b>4</b> · 외부 시스템 <b>4</b> · v1.5 — ① 유스케이스 32개와 ② IA 화면을 책임 단위로 묶은 것 · 큐·DB·프로토콜 등 기술 구조는 ④ 시스템 아키텍처로<br>
       선이 <b>묶음 테두리</b>에 닿으면 그 묶음에 <b>관여</b>한다는 뜻이고(웹 앱처럼 범위가 넓을 때), <b>블록</b>에 닿으면 그 블록과 <b>직접</b> 주고받는다는 뜻입니다 · 빗금 배경 = 저장소 · 블록·흐름 칩을 클릭하면 관련 요소만 남습니다</div>
     </header>
     <div id="wrap">
@@ -176,10 +176,10 @@ const NODES = [
    nt:"저지연 재생 · 되감기 · 카드 시점 이동"},
   {id:"rt-chat",   b:"rt", c:1, r:2, nm:"채팅 수집", uc:"UC-13",
    nt:"방송 시작과 함께 · 플랫폼은 데이터 제공자"},
-  {id:"rt-detect", b:"rt", c:2, r:2, nm:"하이라이트 감지", uc:"UC-12·14",
-   nt:"채팅 피크 + 핫키 마킹 → 카드 승격"},
-  {id:"rt-card",   b:"rt", c:3, r:2, nm:"카드 · 타임라인", uc:"UC-19·20",
-   nt:"카드 목록 · 채팅량 그래프 · 처리 상태 · 숨김·무시"},
+  {id:"rt-detect", b:"rt", c:2, r:2, nm:"하이라이트 감지", uc:"UC-14",
+   nt:"채팅 집계 · 피크 감지 → 카드 자동 생성 (목표 3초) — 입력은 채팅뿐"},
+  {id:"rt-card",   b:"rt", c:3, r:2, nm:"카드 · 타임라인", uc:"UC-12·19·20",
+   nt:"자동+핫키 수동 카드 · 채팅량 그래프 · 처리 상태 · 숨김·무시"},
 
   /* 아카이브 */
   {id:"ar-vod",    b:"ar", c:3, r:1, nm:"VOD 전환 · 보관", uc:"UC-15·21", kind:"보관 60일", store:true,
@@ -338,11 +338,8 @@ const EDGES = [
   {f:2, p:[P("mk-render","r"), P("mk-store","l")]},
   {f:2, p:[P("mk-store","r"), P("mk-upload","l")]},
   {f:2, l:"원클릭 지정", p:[P("mk-tpl","t"), P("mk-upload","b")]},
-  {f:2, ph:2, l:"원클릭 — 카드 액션에서", p:[P("rt-card","r",-20), pt(GX.c34-14, box("rt-card").cy-20),
+  {f:2, ph:2, l:"원클릭 (핫키·카드 액션 · 템플릿 지정 시)", p:[P("rt-card","r",-20), pt(GX.c34-14, box("rt-card").cy-20),
         pt(GX.c34-14, box("mk-upload").cy+20), P("mk-upload","l",20)]},
-  {f:2, ph:2, l:"원클릭 — 핫키에서 (카드 화면 거치지 않음)", p:[P("rt-detect","r",30), pt(GX.c23b, box("rt-detect").cy+30),
-        pt(GX.c23b, GY.arMk3), pt(GX.c34c, GY.arMk3), pt(GX.c34c, box("mk-upload").cy-25),
-        P("mk-upload","l",-25)]},
   {f:2, ph:2, l:"편집본 불러오기 · 재편집", p:[P("mk-store","t"), pt(box("mk-store").cx, GY.mkTop),
         pt(box("mk-edit").cx-35, GY.mkTop), P("mk-edit","t",-35)]},
 
@@ -387,8 +384,8 @@ const EDGES = [
         pt(box("cm-help").cx, GY.cmTop), P("cm-help","t")]},
   {f:0, p:[P("ac-plugin","r",-6), pt(165, box("ac-plugin").cy-6), pt(165, box("rt-ingest").cy-20),
         P("rt-ingest","l",-20)]},
-  {f:0, p:[P("ac-plugin","r",6),  pt(170, box("ac-plugin").cy+6), pt(170, GY.rtRowGap),
-        pt(box("rt-detect").cx, GY.rtRowGap), P("rt-detect","t")]},
+  {f:0, l:"핫키 마킹", p:[P("ac-plugin","r",6),  pt(170, box("ac-plugin").cy+6), pt(170, GY.rtRowGap),
+        pt(box("rt-card").cx, GY.rtRowGap), P("rt-card","t")]},
   {f:0, ends:["ac-web","band-rt"],
    p:[P("ac-web","r",-9), pt(185, box("ac-web").cy-9), pt(185, bandY("rt")+150), pt(BANDX, bandY("rt")+150)]},
   {f:0, ends:["ac-web","band-ar"],
