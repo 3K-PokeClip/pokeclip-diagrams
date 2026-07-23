@@ -116,7 +116,8 @@
 
 <header class="page">
   <h1>Information Architecture</h1>
-  <div class="meta">PokeClip · ② IA(정보 구조) · 표면 <b>4개</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔 — 접근 주체·인증·실행 환경으로 분리) · 노드 <b>170</b> · v3.2 · P1 전용 뷰 <b>?p=1</b> · 2026-07-23 — 웹 앱 진입: 구글 로그인 → 글로벌 메뉴 6개 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b></div>
+  <div class="meta">PokeClip · ② IA(정보 구조) · 표면 <b>4개</b>(공개 웹 · OBS 플러그인 · 웹 앱 · 운영자 콘솔 — 접근 주체·인증·실행 환경으로 분리) · 노드 <b>170</b> · v3.3 · P1 전용 뷰 <b>?p=1</b> · 2026-07-23 — 웹 앱 진입: 구글 로그인 → 글로벌 메뉴 6개 · 노드 배지 <span style="font-family:var(--mono);font-size:10px;background:#eef0f4;border:1px solid #d3d7dd;padding:0 4px">UC-nn</span> = ① 유스케이스 매핑 · «S»/«E» = 전용 권한 · <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">1회</span> = 온보딩(최초 1회) · <b>드래그 = 이동 · Ctrl+휠 = 줌 · 휠 = 스크롤</b><br>
+      모든 카드에 <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">SEQ n</span> 배지가 붙어 있습니다 — 클릭하면 그 카드가 실제로 어떻게 처리되는지 <b>시퀀스 다이어그램</b>을 볼 수 있습니다(키보드는 <b>Enter</b>·<b>Space</b>, 닫기는 <b>Esc</b>)</div>
 </header>
 
 <div id="chart">
@@ -166,37 +167,41 @@
   </div>
 </footer>
 
+<script src="sequences.js"></script>
+<script src="seq-catalog.js"></script>
+<script src="seq-ui.js"></script>
+
 <script>
 const COLS = [
-  {n:"공개 웹", sur:true, p:1, s:"비로그인 · 누구나 접근", c:[
-    {n:"랜딩 · 서비스 소개", scr:true, p:3, c:[
+  {n:"공개 웹", iaId:"ia-public", sur:true, p:1, s:"비로그인 · 누구나 접근", c:[
+    {n:"랜딩 · 서비스 소개", iaId:"ia-landing", scr:true, p:3, c:[
       {n:"핵심 가치", s:"방송이 끝나기 전에 클립이 올라간다"},
       {n:"기능 소개", s:"자동 하이라이트 · 멀티트랙 편집 · 원클릭 업로드"},
       {n:"지원 플랫폼", s:"방송 치지직 · SOOP → 업로드 유튜브"},
       {n:"데모 · 샘플 클립"},
     ]},
-    {n:"요금 안내", scr:true, p:3, c:[
+    {n:"요금 안내", iaId:"ia-pricing", scr:true, p:3, c:[
       {n:"구독 플랜 비교", u:"31"},
       {n:"종량 요금 기준", tbd:true, s:"기준 미정"},
       {n:"무료 체험 · 무료 티어", tbd:true, s:"사업 판단 미정"},
       {n:"편집자 무료 안내", s:"과금 주체는 스트리머 단독"},
     ]},
-    {n:"플러그인 다운로드", scr:true, u:"04", c:[
+    {n:"플러그인 다운로드", iaId:"ia-download", scr:true, u:"04", c:[
       {n:"설치 파일", s:"OS · OBS 버전별"},
       {n:"설치 가이드 · 시스템 요구사항"},
       {n:"릴리스 노트"},
     ]},
-    {n:"도움말 · 문의", scr:true, p:3, c:[
+    {n:"도움말 · 문의", iaId:"ia-help-public", scr:true, p:3, c:[
       {n:"사용 가이드"},
       {n:"자주 묻는 질문", s:"요금 · 설치 · 편집 전반 (단일 FAQ)"},
       {n:"문의 접수", u:"10", s:"가입 전 · 로그인 후 공통"},
       {n:"공지사항", s:"점검 · 업데이트 안내"},
     ]},
-    {n:"서비스 상태", scr:true, p:3, s:"장애·점검 공개 고지", c:[
+    {n:"서비스 상태", iaId:"ia-status", scr:true, p:3, s:"장애·점검 공개 고지", c:[
       {n:"기능별 상태", s:"송출 수신 · 편집 · 업로드"},
       {n:"장애 이력 · 진행 상황"},
     ]},
-    {n:"약관 · 정책", scr:true, p:3, c:[
+    {n:"약관 · 정책", iaId:"ia-terms", scr:true, p:3, c:[
       {n:"이용약관"},
       {n:"개인정보처리방침"},
       {n:"환불 · 청약철회 정책", s:"유료 서비스 필수"},
@@ -204,7 +209,7 @@ const COLS = [
       {n:"오픈소스 라이선스", tbd:true, s:"OBS·FFmpeg 계열 의존성 확인 후 확정"},
     ]},
   ]},
-  {n:"OBS 플러그인", sur:true, tag:"S", s:"스트리머 로컬 앱 · Stream Key 인증(별도 로그인 없음)", u:"04·11·12", c:[
+  {n:"OBS 플러그인", iaId:"ia-plugin", sur:true, tag:"S", s:"스트리머 로컬 앱 · Stream Key 인증(별도 로그인 없음)", u:"04·11·12", c:[
     {n:"연결 설정", u:"04", ob:true, c:[
       {n:"Stream Key 등록", s:"웹에서 발급 → 붙여넣기 = 계정·채널 연결"},
       {n:"인증 실패 안내", s:"오타 · 만료 · 폐기된 키 · 재발급 경로"},
@@ -226,8 +231,8 @@ const COLS = [
     ]},
     {n:"핫키 하이라이트 마킹", u:"12·26", s:"앞뒤 구간 → 대시보드 카드 · 템플릿 지정 시 원클릭 자동 업로드"},
   ]},
-  {n:"라이브", web:true, p:1, s:"글로벌 메뉴 1 — 라이브 · VOD 시청·모니터링", c:[
-    {n:"홈 · 방송 목록", scr:true, s:"로그인 후 첫 화면", c:[
+  {n:"라이브", iaId:"ia-live", web:true, p:1, s:"글로벌 메뉴 1 — 라이브 · VOD 시청·모니터링", c:[
+    {n:"홈 · 방송 목록", iaId:"ia-home", scr:true, s:"로그인 후 첫 화면", c:[
       {n:"시작 가이드", ob:true, p:2, c:[
         {n:"스트리머 체크리스트", tag:"S", s:"채널 연동 → 플러그인 설치 → 구독 결제 → 첫 방송"},
         {n:"편집자 체크리스트", tag:"E", s:"스트리머 신청 → 승인 대기 → 첫 편집"},
@@ -239,7 +244,7 @@ const COLS = [
       {n:"검색 · 필터", p:2, s:"방송일 · 상태 · 담당 스트리머«E»"},
       {n:"스트리머 찾기 · 신청", tag:"E", u:"05", s:"바로가기 — 검색·신청 후 관리는 협업 관리에서"},
     ]},
-    {n:"라이브 대시보드", scr:true, s:"홈에서 방송 선택", c:[
+    {n:"라이브 대시보드", iaId:"ia-dash", scr:true, s:"홈에서 방송 선택", c:[
       {n:"방송 정보", s:"제목 · 플랫폼 · 시작 시각 · 접근 편집자"},
       {n:"오류 상태", st:true, s:"채팅 수집 중단(자동 감지 일시 중단 — 핫키는 계속) · 재생 불가 안내"},
       {n:"플레이어", u:"18", c:[
@@ -261,15 +266,15 @@ const COLS = [
         {n:"숨김 카드 보기", u:"20", s:"오탐 되돌리기"},
       ]},
     ]},
-    {n:"VOD 뷰어", scr:true, u:"21", c:[
+    {n:"VOD 뷰어", iaId:"ia-vod", scr:true, u:"21", c:[
       {n:"방송 정보", s:"제목 · 방송일 · VOD 만료일(60일)"},
       {n:"플레이어", s:"챕터(=카드) 탐색 · 시점 이동"},
       {n:"채팅량 그래프", u:"19", s:"수집분 재생 — 하이라이트 탐색용"},
       {n:"하이라이트 카드 목록", u:"20", p:2, s:"만료 카드 재활성화 · 편집기 진입 · 원클릭 업로드 · 숨김·무시"},
     ]},
   ]},
-  {n:"하이라이트 · 클립", web:true, p:1, s:"글로벌 메뉴 2 — 편집 · 보관 · 템플릿", c:[
-    {n:"클립 편집기", scr:true, u:"22", s:"컨텍스트 진입 — 카드 또는 보관함 편집본에서만", c:[
+  {n:"하이라이트 · 클립", iaId:"ia-clip", web:true, p:1, s:"글로벌 메뉴 2 — 편집 · 보관 · 템플릿", c:[
+    {n:"클립 편집기", iaId:"ia-editor", scr:true, u:"22", s:"컨텍스트 진입 — 카드 또는 보관함 편집본에서만", c:[
       {n:"타임라인", c:[
         {n:"구간 선택", s:"5초~3분"},
         {n:"웨이브폼", s:"트랙별 파형"},
@@ -297,33 +302,33 @@ const COLS = [
         {n:"템플릿으로 저장", u:"24"},
       ]},
     ]},
-    {n:"보관함", scr:true, p:2, s:"영구 보관", c:[
+    {n:"보관함", iaId:"ia-library", scr:true, p:2, s:"영구 보관", c:[
       {n:"클립 목록", u:"27·28", p:2, s:"렌더 결과물 — 업로드 상태 · 렌더 실패 재시도 · 삭제"},
       {n:"편집본 목록", u:"23·28", s:"편집 설정 — 재편집 · 삭제"},
       {n:"재출력 가능 여부", u:"23", s:"VOD 만료 시 불가 · 만료일 표시"},
       {n:"삭제 정책 안내", u:"28", s:"영구 삭제 · 유튜브 업로드본에는 영향 없음"},
       {n:"검색 · 필터", p:2, s:"방송일 · 상태 · 제목"},
     ]},
-    {n:"템플릿 관리", scr:true, u:"24", c:[
+    {n:"템플릿 관리", iaId:"ia-template", scr:true, u:"24", c:[
       {n:"템플릿 목록", s:"저장 · 수정 · 삭제"},
       {n:"원클릭 지정", u:"26", s:"핫키/카드 원클릭 자동 업로드에 사용할 템플릿 선택"},
     ]},
   ]},
-  {n:"업로드 · 승인함", web:true, p:1, s:"글로벌 메뉴 3 — 역할별 노출: 편집자 = 내 업로드·내 요청 / 스트리머 = + 승인 대기함(대기 건수 배지)", c:[
-    {n:"업로드 상태", scr:true, u:"27", c:[
+  {n:"업로드 · 승인함", iaId:"ia-upload", web:true, p:1, s:"글로벌 메뉴 3 — 역할별 노출: 편집자 = 내 업로드·내 요청 / 스트리머 = + 승인 대기함(대기 건수 배지)", c:[
+    {n:"업로드 상태", iaId:"ia-upstatus", scr:true, u:"27", c:[
       {n:"진행 · 결과"},
       {n:"실패 복구", s:"재인증 · 수동 재시도 · 취소"},
       {n:"확인 중 상태", st:true, s:"성공 여부 불명확 — 채널 조회로 확정 후 표시(무조건 재업로드 금지)"},
       {n:"유튜브 링크 · 스튜디오 이동", s:"공개 전환은 스튜디오에서"},
     ]},
-    {n:"승인 대기함", scr:true, p:2, s:"대기 건수 배지의 출처", c:[
+    {n:"승인 대기함", iaId:"ia-approvals", scr:true, p:2, s:"대기 건수 배지의 출처", c:[
       {n:"클립 미리보기", s:"승인 판단 근거 · 방송 중 즉시 확인"},
       {n:"승인 / 반려", tag:"S", u:"30"},
       {n:"내 요청 상태", tag:"E", u:"29", s:"반려 사유 · 대기 중 권한 회수 시 요청 무효"},
     ]},
   ]},
-  {n:"채널 · 협업자", web:true, p:1, s:"글로벌 메뉴 4", c:[
-    {n:"채널 연동", scr:true, tag:"S", u:"02·03", ob:true, c:[
+  {n:"채널 · 협업자", iaId:"ia-channel", web:true, p:1, s:"글로벌 메뉴 4", c:[
+    {n:"채널 연동", iaId:"ia-link", scr:true, tag:"S", u:"02·03", ob:true, c:[
       {n:"방송 채널", u:"02", s:"치지직 / SOOP · 연동 · 해제"},
       {n:"유튜브 채널", u:"03", c:[
         {n:"연동 · 해제", s:"OAuth"},
@@ -331,33 +336,33 @@ const COLS = [
         {n:"연동 만료·철회 재인증", s:"업로드 실패 주원인"},
       ]},
     ]},
-    {n:"스트리머 접근", scr:true, tag:"E", u:"05", c:[
+    {n:"스트리머 접근", iaId:"ia-request", scr:true, tag:"E", u:"05", c:[
       {n:"신청 · 진행 상태"},
       {n:"내 권한 단계", s:"기본 / 직접 업로드 / 원클릭 자동"},
       {n:"협업 종료", u:"06", s:"종료 즉시 해당 스트리머 자산 접근 불가"},
       {n:"접근 불가 안내", st:true, s:"권한 회수·협업 종료 시 — 목록에서 제외"},
     ]},
-    {n:"편집자 관리", scr:true, tag:"S", u:"07", c:[
+    {n:"편집자 관리", iaId:"ia-editors", scr:true, tag:"S", u:"07", c:[
       {n:"신청 대기 목록", s:"승인 / 반려"},
       {n:"승인된 편집자", s:"권한 3단계 변경(기본 / 직접 업로드 / 원클릭 자동) · 회수"},
       {n:"권한 회수 결과 안내", s:"회수 즉시 전면 차단 — 편집본·클립 열람 불가"},
       {n:"편집자별 활동 이력", s:"제작 클립 · 업로드 이력"},
     ]},
   ]},
-  {n:"알림", web:true, p:3, s:"글로벌 메뉴 5", c:[
-    {n:"알림함", scr:true, u:"16", s:"전역 헤더에서도 접근 · 방송 시작 · 승인 요청 · 승인 결과 · 결제 실패 · VOD 만료 임박"},
+  {n:"알림", iaId:"ia-noti", web:true, p:3, s:"글로벌 메뉴 5", c:[
+    {n:"알림함", iaId:"ia-inbox", scr:true, u:"16", s:"전역 헤더에서도 접근 · 방송 시작 · 승인 요청 · 승인 결과 · 결제 실패 · VOD 만료 임박"},
   ]},
-  {n:"설정", web:true, p:1, s:"글로벌 메뉴 6", c:[
-    {n:"플러그인", scr:true, tag:"S", u:"04", ob:true, c:[
+  {n:"설정", iaId:"ia-settings", web:true, p:1, s:"글로벌 메뉴 6", c:[
+    {n:"플러그인", iaId:"ia-set-plugin", scr:true, tag:"S", u:"04", ob:true, c:[
       {n:"Stream Key", s:"발급 · 재발급 · 폐기"},
       {n:"플러그인 연결 확인", s:"연결 여부 · 최근 송출"},
       {n:"다운로드 안내", s:"공개 웹 다운로드 페이지로"},
     ]},
-    {n:"알림 설정", scr:true, u:"08", c:[
+    {n:"알림 설정", iaId:"ia-set-noti", scr:true, u:"08", c:[
       {n:"알림 종류별 on/off", s:"방송 시작 · 승인 요청 · 승인 결과 · 결제 실패 · VOD 만료 임박"},
       {n:"수신 채널", tbd:true, s:"웹 푸시 · 이메일 — 미정"},
     ]},
-    {n:"구독 · 결제", scr:true, tag:"S", u:"31·32", c:[
+    {n:"구독 · 결제", iaId:"ia-billing", scr:true, tag:"S", u:"31·32", c:[
       {n:"플랜 · 결제 수단", u:"31", ob:true},
       {n:"실시간 사용량", u:"32", c:[
         {n:"항목별 측정값", tbd:true, s:"종량 기준 미정"},
@@ -366,16 +371,16 @@ const COLS = [
       {n:"청구 내역", u:"32"},
       {n:"결제 상태 · 실패 복구", u:"17·31", s:"갱신 실패 · 결제 수단 갱신"},
     ]},
-    {n:"계정", scr:true, u:"01·09", c:[
+    {n:"계정", iaId:"ia-account", scr:true, u:"01·09", c:[
       {n:"프로필", s:"구글 계정 정보 · 표시 이름"},
       {n:"로그아웃"},
       {n:"계정 삭제", u:"09", s:"활성 구독 해지 선행 · 보관물 처리 TBD"},
     ]},
-    {n:"도움말 · 문의", scr:true, u:"10", s:"공개 웹 화면 공유 · 전역 헤더에서도 접근", c:[
+    {n:"도움말 · 문의", iaId:"ia-help-settings", scr:true, u:"10", s:"공개 웹 화면 공유 · 전역 헤더에서도 접근", c:[
       {n:"내 문의 내역", u:"10", s:"접수 상태 · 답변 확인"},
     ]},
   ]},
-  {n:"운영자 콘솔", sur:true, p:3, s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계(①에 범위 외 선언)", c:[
+  {n:"운영자 콘솔", iaId:"ia-console", sur:true, p:3, s:"사내 · 별도 인증 — 위치만 표시, 상세는 별도 설계(①에 범위 외 선언)", c:[
     {n:"스트리머 · 계정 관리"},
     {n:"시스템 모니터링", s:"송출 수신 · 렌더 큐 · 스토리지"},
     {n:"CS · 분쟁 대응"},
@@ -411,6 +416,7 @@ function nodeHTML(d){
     (d.showPh?`<span class="ph">P${d.phase}</span>`:"")+`</div>`+
     (d.s?`<div class="sb">${d.s}</div>`:"");
 }
+const IA_CARDS = [];        /* 시퀀스가 걸리는 카드 — 표면 9 + 화면 23 */
 function render(d, depth, inherited){
   const li = document.createElement("li");
   li.className = (depth===0?"head":"") + (d.scr?" scr":"") + (d.c?"":" leaf");
@@ -418,6 +424,8 @@ function render(d, depth, inherited){
   d.showPh = depth===0 || d.scr;
   const n = document.createElement("div"); n.className="n"; n.innerHTML = nodeHTML(d);
   n.dataset.phase = d.phase;
+  /* 표면(컬럼 머리)과 화면에만 안정적인 id를 붙인다 — 시퀀스가 가리키는 카드 단위 */
+  if(d.iaId){ n.dataset.ia = d.iaId; IA_CARDS.push({id:d.iaId, el:n, title:d.n, resp:d.s || ""}); }
   li.appendChild(n);
   if(d.c){
     const ul = document.createElement("ul");
@@ -518,17 +526,21 @@ chart.addEventListener("wheel", e=>{
   if(e.ctrlKey) zoomAt(e.clientX-r.left, e.clientY-r.top, Math.exp(-e.deltaY*0.0015));
   else { vx -= e.deltaX; vy -= e.deltaY; applyView(); }
 }, {passive:false});
-let pan=null;
+let pan=null, panned=false;
 chart.addEventListener("mousedown", e=>{
   if(e.target.closest("#ctl")) return;
-  pan={x:e.clientX, y:e.clientY}; chart.classList.add("panning"); e.preventDefault();
+  pan={x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY};
+  panned=false; chart.classList.add("panning"); e.preventDefault();
 });
 window.addEventListener("mousemove", e=>{
   if(!pan) return;
   vx += e.clientX-pan.x; vy += e.clientY-pan.y;
-  pan={x:e.clientX, y:e.clientY}; applyView();
+  if(Math.abs(e.clientX-pan.x0)>3||Math.abs(e.clientY-pan.y0)>3) panned=true;
+  pan={x:e.clientX, y:e.clientY, x0:pan.x0, y0:pan.y0}; applyView();
 });
-window.addEventListener("mouseup", ()=>{pan=null; chart.classList.remove("panning");});
+window.addEventListener("mouseup", ()=>{pan=null; chart.classList.remove("panning");
+  /* 클릭 이벤트가 지나간 뒤에 되돌린다 */
+  setTimeout(()=>{panned=false;},0);});
 chart.addEventListener("contextmenu", e=>e.preventDefault());
 document.getElementById("btnFit").addEventListener("click", fit);
 document.getElementById("btnZin").addEventListener("click", ()=>zoomAt(chart.clientWidth/2, chart.clientHeight/2, 1.2));
@@ -563,10 +575,29 @@ phasesEl.addEventListener("click", e=>{
   sel.has(c.dataset.phase) ? sel.delete(c.dataset.phase) : sel.add(c.dataset.phase);
   applyPhase();
 });
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ sel.clear(); applyPhase(); } });
+document.addEventListener("keydown", e=>{
+  if(e.key!=="Escape") return;
+  /* 시퀀스 레이어가 열려 있으면 그쪽이 먼저 한 겹 닫는다 */
+  if(window.SeqUI && SeqUI.isOpen && SeqUI.isOpen()) return;
+  sel.clear(); applyPhase();
+});
 /* ?p=1 (또는 ?p=1,2) — 발표·공유용 단계 고정 링크. P1 전용 뷰 = ?p=1 */
 (new URLSearchParams(location.search).get("p")||"").split(",").filter(x=>PHASES[x]).forEach(x=>sel.add(x));
 if(sel.size) applyPhase();
+
+/* ══════════════════════════════════════════════════════════════════════
+   카드 → 시퀀스 — ①③④와 같은 공용 레이어(seq-ui.js)를 쓴다.
+   ②는 계층 구조를 통째로 보는 문서라 관계 강조가 없다. 그래서 onOpen도 없다.
+   카드는 표면(컬럼 머리) 9개와 화면(scr) 23개다 — 그 아래 항목은 화면 안의
+   구성 요소이지 별도 화면이 아니라서 카드로 세지 않는다.
+══════════════════════════════════════════════════════════════════════ */
+SeqUI.init({
+  diagram: "ia",
+  eyebrow: "표면 · 화면",
+  blocked: () => panned,
+  badgeInto: el => el.querySelector(".nm") || el,
+  cards: IA_CARDS
+});
 </script>
 </body>
 </html>

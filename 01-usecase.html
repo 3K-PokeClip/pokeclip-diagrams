@@ -133,6 +133,7 @@
   .notebox li{margin-left:16px;font-size:11px;margin-bottom:2px;color:#3a3f47}
   .notebox .tbd{font-family:var(--mono);font-size:9px;border:1px solid var(--ink);
                 padding:0 4px;margin-left:4px}
+
   .lg{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#3a3f47;margin-bottom:5px}
   .lg .sline{display:inline-block;width:34px;height:0;border-top:1.4px solid var(--ink)}
   .lg .dbox{display:inline-block;width:30px;height:14px;border:1.2px dashed var(--group-line);border-radius:3px}
@@ -147,7 +148,8 @@
   <div id="inner">
     <header class="page">
       <h1>Use Case Diagram</h1>
-      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.8 — P1 전용 뷰: 주소에 <b>?p=1</b> — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다</div>
+      <div class="meta">PokeClip · 액터 <b>6</b>(사람 2 · 외부 시스템 4) · 유스케이스 <b>32</b> · 그룹 <b>6</b> · v3.9 — P1 전용 뷰: 주소에 <b>?p=1</b> — 실선은 액터↔역할 그룹 관여 · 유스케이스별 참여자는 박스 안 배지 · 액터나 박스를 클릭하면 관련 요소만 남습니다<br>
+      모든 유스케이스 카드에 <span style="font-family:var(--mono);font-size:10px;background:var(--ink);color:#fff;padding:0 5px">SEQ n</span> 배지가 붙어 있습니다 — 클릭하면 그 유스케이스가 실제로 어떻게 처리되는지 <b>시퀀스 다이어그램</b>을 볼 수 있습니다(키보드는 <b>Enter</b>·<b>Space</b>, 닫기는 <b>Esc</b>)</div>
     </header>
 
     <div id="wrap">
@@ -198,6 +200,10 @@
 </div>
 
 <div id="ctlbar"><div class="phases" id="phases"></div></div>
+
+<script src="sequences.js"></script>
+<script src="seq-catalog.js"></script>
+<script src="seq-ui.js"></script>
 
 <script>
 const ACTORS = {
@@ -520,6 +526,8 @@ document.addEventListener("mouseout",e=>{
 document.addEventListener("click",e=>{
   if(dragged){ dragged = false; return; }   /* 화면을 끌었으면 클릭으로 보지 않는다 */
   if(e.target.closest("#hud")) return;
+  /* 시퀀스 레이어 안의 클릭은 다이어그램 강조를 건드리지 않는다 */
+  if(e.target.closest("#seqDrawer,#seqOverlay,#seqTip,#seqScrim")) return;
   const a = e.target.closest(".actor");
   if(a){ setPin({kind:"actor", code:a.id.replace("actor-","")}); return; }
   const u = e.target.closest(".uc");
@@ -528,6 +536,8 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
+  /* 시퀀스 레이어가 열려 있으면 그쪽이 먼저 한 겹 닫는다 */
+  if(window.SeqUI && SeqUI.isOpen && SeqUI.isOpen()) return;
   setPin(null); sel.clear(); applyPhase();
 });
 
@@ -581,6 +591,28 @@ window.addEventListener("resize",()=>{
 });
 refresh();
 fit();
+
+/* ══════════════════════════════════════════════════════════════════════
+   카드 → 시퀀스 — ②③④와 같은 공용 레이어(seq-ui.js)를 쓴다.
+   · 카드는 실제 DOM(#uc-13 등)이라 확대·이동 중에도 클릭 좌표가 어긋나지 않는다.
+   · Drawer·Overlay는 position:fixed 라 레이아웃을 밀지 않는다 → fit() 이 다시
+     돌지 않고 확대·스크롤 위치가 그대로 보존된다.
+   · 목록 내용은 seq-catalog.js 한 곳에서 온다.
+══════════════════════════════════════════════════════════════════════ */
+SeqUI.init({
+  diagram: "usecase",
+  eyebrow: "유스케이스",
+  blocked: () => dragged,
+  badgeInto: el => el.querySelector(".badges") || el,
+  onOpen: (id, el) => { if(!(pinned && pinned.kind==="uc" && pinned.el===el)) setPin({kind:"uc", el}); },
+  cards: Object.values(GROUPS).flatMap(g => g.items).map(it => ({
+    id: "UC-" + pad2(it.id),
+    el: document.getElementById("uc-" + it.id),
+    title: "UC-" + pad2(it.id) + " " + it.name,
+    resp: it.note || ""
+  }))
+});
+
 </script>
 </body>
 </html>

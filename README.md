@@ -17,6 +17,61 @@
 | B | [부록 B · 추적성 표](07-traceability.html) | UC 32개 → 화면 → 책임(소유 데이터) → 실행 단위 → 저장소·이벤트 |
 | C | [부록 C · 상태 머신](08-state-machines.html) | 방송·클립·업로드 3종(상태 24 · 전이 30) — 여기 없는 전이는 불법, 업로드 불명확 성공은 `RECONCILING` |
 
+## 시퀀스 다이어그램
+
+**①②③④의 모든 카드가 눌립니다.** 카드마다 `SEQ n` 배지가 붙어 있고, 누르면 오른쪽 서랍에 그 카드와 관련된 처리 흐름 목록이 열립니다. 항목을 고르면 전체 화면으로 시퀀스 다이어그램이 뜹니다.
+
+| 다이어그램 | 카드 | 카드가 뜻하는 것 |
+|---|:-:|---|
+| ① 유스케이스 | 32 | UC-01 ~ UC-32 |
+| ② IA | 32 | 표면 9(컬럼 머리) + 화면 23 |
+| ③ 서비스 | 29 | 논리 Capability 21 + 접점 4 + 외부 4 |
+| ④ 시스템 | 21 | 실행 단위 · 저장소 14 + 접점 3 + 외부 4 |
+
+시퀀스는 **46종**이고 정상 흐름뿐 아니라 실패·재시도·복구 흐름을 함께 담았습니다.
+
+| 묶음 | 흐름 |
+|---|---|
+| `SEQ-PUB` 3 | 공개 웹 · 문의 · 서비스 상태 고지 |
+| `SEQ-AUTH` 2 | 구글 로그인 · 계정 삭제(구독 해지 선행) |
+| `SEQ-LINK` 3 | 방송 채널 · 유튜브 채널 연동 · 토큰 만료와 재인증 |
+| `SEQ-PLUG` 2 | 플러그인 설치·연결 테스트 · 핫키 수동 마킹 |
+| `SEQ-BC` 3 | 송출 시작 · heartbeat 단절과 유예 · 라이브 시청 |
+| `SEQ-CHAT` 5 | 채팅 수집 활성화 · 집계·보관 · WS 단절 · Lease 인계 · 종료 Flush |
+| `SEQ-DET` 2 | 피크 감지 → 카드 · 워밍업과 감지 중단 |
+| `SEQ-SSE` 2 | 다중 서버 SSE 팬아웃 · 끊김과 스냅샷 복구 |
+| `SEQ-VOD` 3 | 파이널라이즈 · VOD 시청 · 60일 만료 |
+| `SEQ-EDIT` 6 | 편집 진입 · AI 자막 · 저장 · 렌더 · 렌더 실패 · 삭제 |
+| `SEQ-UP` 6 | 업로드 2단 검사 · 승인 요청 · 승인/반려 · 원클릭 · 불명확한 성공 복구 · 템플릿 |
+| `SEQ-COL` 2 | 편집자 승인·권한 부여 · 회수와 즉시 차단 |
+| `SEQ-NOTI` 2 | 알림 발송 · 알림 설정 |
+| `SEQ-BILL` 3 | 구독 가입·갱신 · 결제 실패 복구 · 사용량 계측 |
+| `SEQ-OPS` 1 | 감사 로그(audit_log) |
+| `SEQ-GROW` 1 | 성장기 이벤트 버스(Kafka) 도입 조건 |
+
+주소로 바로 열 수 있습니다. 새로고침해도 같은 화면이 뜨고, 브라우저 뒤로/앞으로도 동작합니다.
+
+```
+01-usecase.html?diagram=usecase&card=UC-13&sequence=SEQ-CHAT-03
+02-ia.html?diagram=ia&card=ia-dash
+03-service-architecture.html?diagram=service&card=rt-chat
+04-system-architecture.html?diagram=system&card=w-render&sequence=SEQ-EDIT-05
+```
+
+키보드로도 됩니다 — 카드에서 `Enter`/`Space`로 열고, `Esc`를 누르면 시퀀스 → 서랍 → 원본 순서로 한 겹씩 닫힙니다. 포커스는 닫은 뒤 원래 카드로 돌아옵니다.
+
+### 같은 흐름을 카드마다 만들지 않는 구조
+
+```
+sequences.js     엔진 — 참여자 사전 · SVG 렌더러 · 카드 역인덱스 (데이터를 모른다)
+seq-catalog.js   시퀀스 내용이 있는 유일한 곳
+seq-ui.js        카드 클릭 → 목록 → 상세. 네 문서 공용 (CSS·DOM을 스스로 만든다)
+```
+
+카드 → 시퀀스 매핑은 손으로 적지 않습니다. 시퀀스가 스스로 `relatedUcIds` · `relatedIaNodeIds` · `relatedServiceIds` · `relatedComponentIds`로 "나는 어느 카드에 걸리는가"를 밝히고, 엔진이 역인덱스를 만듭니다. 그래서 `SEQ-CHAT-03` 하나가 ① `UC-13`, ② `라이브 대시보드`, ③ `채팅 수집`, ④ `채팅 수집기`·`Redis`·`Core API`·`치지직/SOOP`에 동시에 나타나되 내용은 한 벌만 존재합니다.
+
+검사는 `node tools/check-catalog.js`로 돌립니다 — 카드 누락, 없는 카드 참조, 프래그먼트 불균형, 생명선에 없는 참여자 참조, 확정되지 않은 큐 이름, 초기 구성에 새어든 Kafka를 잡습니다.
+
 ## ④의 기술 기준
 
 ④는 팀 ADR과 확정 스택을 따릅니다. **PostgreSQL(+JSONB)** · **Java 21 Spring Boot/WebFlux** · **Go+FFmpeg** 미디어 · **Redis** 실시간 집계 · **SQS+DLQ** 작업 큐 · **CMAF/S3**.
