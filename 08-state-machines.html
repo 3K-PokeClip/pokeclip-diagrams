@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokeClip — 부록 C · 상태 머신</title>
+<style>
+  :root{--bg:#fbfbfc;--ink:#16181c;--sub:#5c626c;--faint:#9aa1ab;--line:#dde2ea;
+        --mono:Consolas,"Cascadia Mono",monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+       font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+       font-size:13.5px;line-height:1.55;padding:40px 28px 80px;
+       display:flex;flex-direction:column;align-items:center}
+  .page{width:100%;max-width:1330px}
+  h1{display:inline-block;background:var(--ink);color:#fff;font-size:21px;font-weight:800;
+     padding:5px 16px 6px}
+  .meta{margin-top:9px;color:var(--sub);font-size:12px;max-width:960px}
+  .meta b{color:var(--ink)}
+  h2{font-size:15px;margin:36px 0 10px;padding-bottom:5px;border-bottom:1.5px solid var(--ink)}
+  h2 .sub{font-weight:400;font-size:11.5px;color:var(--sub);margin-left:8px}
+  .smwrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#fff;
+          margin-bottom:12px}
+  .sm{position:relative;width:1290px;margin:0 auto}
+  .sm svg{position:absolute;inset:0;pointer-events:none}
+  .sm svg path{fill:none;stroke:var(--ink);stroke-width:1.3;opacity:.75;stroke-linejoin:round}
+  .stn{position:absolute;background:#fff;border:1.3px solid var(--ink);border-radius:5px;
+       padding:7px 10px;text-align:center}
+  .stn .nm{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.01em}
+  .stn .sb{font-size:9.5px;color:var(--sub);line-height:1.25;margin-top:2px}
+  .stn.term{box-shadow:0 0 0 2.5px var(--bg), 0 0 0 3.8px var(--ink)}
+  .stn.start{background:repeating-linear-gradient(135deg,#fff 0 6px,#f4f6f8 6px 12px)}
+  .lbl{position:absolute;transform:translate(-50%,-50%);font-size:9.5px;font-weight:600;
+       color:#4b5563;background:rgba(251,251,252,.92);padding:0 3px;white-space:nowrap;
+       border-radius:2px}
+  .wrapx{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+  table{border-collapse:collapse;width:100%;min-width:1050px;font-size:11.8px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#f4f6f8;font-weight:700;font-size:11.3px;white-space:nowrap;
+     border-bottom:1.5px solid var(--ink)}
+  tr:last-child td{border-bottom:none}
+  td.t{font-family:var(--mono);font-size:10.5px;font-weight:700;white-space:nowrap}
+  code{font-family:var(--mono);font-size:10.5px;background:#f1f3f6;padding:1px 4px;border-radius:3px}
+  .note{margin-top:10px;font-size:11.5px;color:var(--sub)}
+  .note b{color:var(--ink)}
+  .foot{margin-top:44px;font-size:11px;color:var(--faint);border-top:1px solid var(--line);
+        padding-top:14px}
+  a{color:inherit}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#16181c;--ink:#f0f2f5;--sub:#a8b0ba;--faint:#6b7280;--line:#2c3138}
+    .smwrap,.wrapx{background:#1c1f24}
+    .stn{background:#1c1f24}
+    .stn.start{background:repeating-linear-gradient(135deg,#1c1f24 0 6px,#22262c 6px 12px)}
+    th{background:#22262c}code{background:#22262c}
+    .lbl{background:rgba(22,24,28,.92);color:#a8b0ba}
+  }
+  :root[data-theme="dark"]{--bg:#16181c;--ink:#f0f2f5;--sub:#a8b0ba;--faint:#6b7280;--line:#2c3138}
+  :root[data-theme="light"]{--bg:#fbfbfc;--ink:#16181c;--sub:#5c626c;--faint:#9aa1ab;--line:#dde2ea}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>부록 C · 상태 머신</h1>
+<div class="meta">방송 · 클립 · 업로드의 <b>상태와 전이를 코드가 그대로 따라야 하는 규격</b>으로 못박는다.
+상태 전이는 전부 <b>Core API가 PostgreSQL 트랜잭션으로 기록</b>하고, 화면에 알릴 전이는 같은 트랜잭션의 Outbox로 발행한다(④).
+빗금 = 시작 상태 · 이중 테두리 = 종료 상태(더 이상 전이 없음). 화살표 라벨 = 트리거.</div>
+
+<h2>C-1. 방송 (Broadcast) <span class="sub">stop과 heartbeat 만료는 다른 길 — 순단은 방송 종료가 아니다</span></h2>
+<div class="smwrap"><div class="sm" id="smA"></div></div>
+<div class="wrapx">
+<table>
+<thead><tr><th>전이</th><th>트리거</th><th>부작용</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td class="t">IDLE → LIVE</td><td>SRT 연결 + <code>start</code></td><td><code>BroadcastStarted</code> → 채팅 수집 Lease 시작 · 알림</td><td>ingestEpoch 채번</td></tr>
+<tr><td class="t">LIVE → RECONNECTING</td><td><code>heartbeat</code> 만료</td><td>화면에 "재연결 중" 표시 · 수집은 계속</td><td>유예(grace) 시간 내 복구 대기</td></tr>
+<tr><td class="t">RECONNECTING → LIVE</td><td>플러그인 재연결</td><td>세그먼트 이어붙임</td><td>같은 broadcastId 유지</td></tr>
+<tr><td class="t">RECONNECTING → ENDING</td><td>유예 실패</td><td rowspan="2"><code>BroadcastStopped</code> · <code>vod-finalize-job</code> 발행 · 채팅 수집 중지</td><td>비정상 단절로 기록</td></tr>
+<tr><td class="t">LIVE → ENDING</td><td>플러그인 <code>stop</code></td><td>정상 종료 — 즉시</td></tr>
+<tr><td class="t">ENDING → FINALIZING</td><td>미디어 서버가 job 소비</td><td>S3 세그먼트 + PG 방송 상태만으로 매니페스트 생성</td><td>멱등 <code>broadcastId+ingestEpoch</code> · 어느 인스턴스든 동일</td></tr>
+<tr><td class="t">FINALIZING → FINALIZING</td><td>실패</td><td>SQS 재전달로 재시도</td><td>멱등이라 중복 안전 · 반복 실패는 DLQ+알람</td></tr>
+<tr><td class="t">FINALIZING → VOD_READY</td><td>매니페스트 확정</td><td>VOD 공개 · 만료 카드 챕터 재활성화(UC-15)</td><td>60일 수명 시작</td></tr>
+<tr><td class="t">VOD_READY → EXPIRED</td><td>60일 경과</td><td>만료 임박 알림(사전) · 재출력 불가 전환</td><td>클립·편집본은 유지(ADR-004)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>C-2. 클립 (ClipProject → 렌더) <span class="sub">실패는 격리하고, 재시도는 멱등으로</span></h2>
+<div class="smwrap"><div class="sm" id="smB"></div></div>
+<div class="wrapx">
+<table>
+<thead><tr><th>전이</th><th>트리거</th><th>부작용</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td class="t">DRAFT → SAVED</td><td>편집본 저장(UC-23)</td><td>편집 설정 저장 — 자동 임시 저장과 별개</td><td>ClipProject 소유: 클립 편집</td></tr>
+<tr><td class="t">SAVED → DRAFT</td><td>재편집 · 재출력</td><td>편집기 재진입</td><td>재출력은 VOD 60일 내</td></tr>
+<tr><td class="t">DRAFT → RENDER_QUEUED</td><td>렌더 큐 등록</td><td><code>RenderRequested</code> · <code>render-jobs</code> 발행</td><td><code>jobId+renderVersion</code> 채번</td></tr>
+<tr><td class="t">RENDER_QUEUED → RENDERING</td><td>렌더 워커 소비</td><td>작업 상태 보고(REST) 시작</td><td>visibility timeout 30분+heartbeat 연장</td></tr>
+<tr><td class="t">RENDERING → RENDERED</td><td>렌더 완료</td><td><code>RenderCompleted</code> · 산출물 S3 · 클립 자산 등록</td><td>영구 보관(ClipAsset)</td></tr>
+<tr><td class="t">RENDERING → RENDER_FAILED</td><td>렌더 실패</td><td>실패 사유 기록 · 보관함에 재시도 노출</td><td>최대 수신 초과 시 DLQ 격리</td></tr>
+<tr><td class="t">RENDER_FAILED → RENDER_QUEUED</td><td>사용자 재시도</td><td>동일 <code>renderVersion</code> 재발행</td><td>멱등 — 중복 산출물 없음</td></tr>
+<tr><td class="t">RENDERED → DELETED</td><td>사용자 삭제(UC-28)</td><td>메타 삭제 상태 · S3 객체 수명 처리 · <b>삭제 이력 audit_log</b></td><td>유튜브 업로드본 영향 없음</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>C-3. 업로드 (UploadAttempt) <span class="sub">불명확 성공은 RECONCILING — 확인 없이 재업로드하지 않는다</span></h2>
+<div class="smwrap"><div class="sm" id="smC"></div></div>
+<div class="wrapx">
+<table>
+<thead><tr><th>전이</th><th>트리거</th><th>부작용</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td class="t">REQUESTED → QUEUED</td><td>Gate 1차 통과(직접 업로드 이상 권한)</td><td><code>upload-jobs</code> 발행</td><td>UC-25·26 공통 진입</td></tr>
+<tr><td class="t">REQUESTED → PENDING_APPROVAL</td><td>Gate 1차 — 권한 부족</td><td><code>UploadRequested</code> · 승인 대기함 · 스트리머 알림</td><td>차단 대신 대기(ADR-012)</td></tr>
+<tr><td class="t">PENDING_APPROVAL → QUEUED</td><td>스트리머 승인(UC-30)</td><td><code>UploadApproved</code> · <b>승인 이력 audit_log</b></td><td></td></tr>
+<tr><td class="t">PENDING_APPROVAL → REJECTED</td><td>스트리머 반려</td><td>반려 사유 · 편집자 알림 · audit_log</td><td>종료 상태</td></tr>
+<tr><td class="t">PENDING_APPROVAL → CANCELED</td><td>대기 중 권한 회수 · 편집자 취소</td><td>요청 무효 · audit_log</td><td>종료 상태</td></tr>
+<tr><td class="t">QUEUED → UPLOADING</td><td>업로드 워커 소비 + <b>Gate 2차 통과</b></td><td>YouTube API 호출 시작</td><td>2차 검사는 실행 직전</td></tr>
+<tr><td class="t">QUEUED·UPLOADING → BLOCKED</td><td>Gate 2차 실패(권한 중도 회수)</td><td>차단 기록 · audit_log · 스트리머·편집자 알림</td><td>업로드는 나가지 않음</td></tr>
+<tr><td class="t">UPLOADING → UPLOADED</td><td>성공 응답</td><td><code>UploadCompleted</code> · 비공개 + CC · 유튜브 링크 저장</td><td>종료 상태</td></tr>
+<tr><td class="t">UPLOADING → FAILED</td><td>명확한 실패(4xx · 토큰 만료 등)</td><td>실패 사유 · 재인증 유도(UC-27)</td><td></td></tr>
+<tr><td class="t">UPLOADING → RECONCILING</td><td><b>응답 전 단절 · 타임아웃 — 성공 여부 불명확</b></td><td>재업로드 보류 · 채널 조회 예약</td><td><b>무조건 재시도 금지</b>(중복 게시 방지)</td></tr>
+<tr><td class="t">RECONCILING → UPLOADED</td><td>채널 조회: 영상 존재</td><td>성공으로 확정 · 링크 저장</td><td>멱등 확정</td></tr>
+<tr><td class="t">RECONCILING → FAILED</td><td>채널 조회: 없음 확인</td><td>실패로 확정</td><td>이제야 재시도 가능</td></tr>
+<tr><td class="t">FAILED → QUEUED</td><td>재인증 후 수동 재시도(UC-27)</td><td>동일 <code>jobId</code> 재발행</td><td>Gate 2차 다시 통과해야 함</td></tr>
+<tr><td class="t">FAILED → CANCELED</td><td>사용자 취소</td><td>audit_log</td><td>종료 상태</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+<b>공통 규칙</b> — ① 전이의 원본은 PostgreSQL(상태 컬럼 + 전이 기록), 화면 갱신은 Outbox → Redis Pub/Sub → SSE.
+② <b>audit_log 대상 전이</b>: 승인·반려·차단·취소·삭제·권한 변경(표에 표시).
+③ 여기 없는 전이는 <b>불법</b> — 코드에서 상태 검증 없이 상태를 덮어쓰지 않는다.
+④ 세 머신의 연결: 방송 <code>ENDING</code> → 클립 재출력 시한(60일)의 기점 · 클립 <code>RENDERED</code> → 업로드 <code>REQUESTED</code>의 전제.
+</div>
+
+<div class="foot">
+PokeClip 설계 문서 · 부록 C —
+<a href="04-system-architecture.html">④ 시스템 아키텍처</a> · <a href="06-failure-scenarios.html">부록 A</a> ·
+<a href="07-traceability.html">부록 B</a> · <a href="index.html">목록으로</a>
+</div>
+
+</div>
+<script>
+/* 상태 머신 렌더 — 좌표는 손배치, 아래 audit()가 겹침·관통을 검사한다 */
+const MACHINES = {
+  smA:{h:250, nodes:[
+    {id:"a-idle", x:30,  y:110, w:130, h:62, nm:"IDLE", sb:"송출 대기", start:true},
+    {id:"a-live", x:240, y:110, w:150, h:62, nm:"LIVE", sb:"세그먼트 적재 · DVR"},
+    {id:"a-rec",  x:260, y:15,  w:190, h:62, nm:"RECONNECTING", sb:"heartbeat 유예 · 재접속 대기"},
+    {id:"a-end",  x:480, y:110, w:150, h:62, nm:"ENDING", sb:"종료 확정 · job 발행"},
+    {id:"a-fin",  x:710, y:110, w:160, h:62, nm:"FINALIZING", sb:"매니페스트 확정 중"},
+    {id:"a-vod",  x:950, y:110, w:150, h:62, nm:"VOD_READY", sb:"60일 보관"},
+    {id:"a-exp",  x:1160,y:110, w:110, h:62, nm:"EXPIRED", sb:"재출력 불가", term:true},
+  ], edges:[
+    {f:"a-idle",t:"a-live", p:[[160,141],[240,141]], l:"SRT + start", lx:200, ly:131},
+    {f:"a-live",t:"a-rec",  p:[[290,110],[290,77]],  l:"heartbeat 만료", lx:222, ly:95},
+    {f:"a-rec", t:"a-live", p:[[370,77],[370,110]],  l:"재연결 · 이어붙임", lx:452, ly:95},
+    {f:"a-rec", t:"a-end",  p:[[450,46],[555,46],[555,110]], l:"유예 실패", lx:508, ly:38},
+    {f:"a-live",t:"a-end",  p:[[390,141],[480,141]], l:"stop — 즉시", lx:435, ly:131},
+    {f:"a-end", t:"a-fin",  p:[[630,141],[710,141]], l:"vod-finalize-job", lx:670, ly:100},
+    {f:"a-fin", t:"a-fin",  p:[[770,172],[770,208],[830,208],[830,172]],
+      l:"실패 → SQS 재전달 (멱등 broadcastId+ingestEpoch)", lx:800, ly:222},
+    {f:"a-fin", t:"a-vod",  p:[[870,141],[950,141]], l:"확정 완료", lx:910, ly:100},
+    {f:"a-vod", t:"a-exp",  p:[[1100,141],[1160,141]], l:"60일", lx:1130, ly:130},
+  ]},
+  smB:{h:330, nodes:[
+    {id:"b-draft",x:30,  y:130, w:150, h:62, nm:"DRAFT", sb:"편집 중 · 자동 임시 저장", start:true},
+    {id:"b-saved",x:280, y:15,  w:150, h:62, nm:"SAVED", sb:"편집본 저장 (UC-23)"},
+    {id:"b-rq",   x:280, y:130, w:170, h:62, nm:"RENDER_QUEUED", sb:"render-jobs 발행"},
+    {id:"b-ing",  x:530, y:130, w:150, h:62, nm:"RENDERING", sb:"렌더 워커 처리"},
+    {id:"b-fail", x:530, y:240, w:170, h:62, nm:"RENDER_FAILED", sb:"보관함에서 재시도 · DLQ"},
+    {id:"b-done", x:770, y:130, w:150, h:62, nm:"RENDERED", sb:"완성 클립 · 영구 보관"},
+    {id:"b-del",  x:1010,y:130, w:150, h:62, nm:"DELETED", sb:"유튜브 업로드본 영향 없음", term:true},
+  ], edges:[
+    {f:"b-draft",t:"b-saved", p:[[105,130],[105,46],[280,46]], l:"저장", lx:195, ly:38},
+    {f:"b-saved",t:"b-draft", p:[[280,62],[155,62],[155,130]], l:"재편집 · 재출력(60일 내)", lx:222, ly:76},
+    {f:"b-draft",t:"b-rq",   p:[[180,161],[280,161]], l:"렌더 등록", lx:230, ly:151},
+    {f:"b-rq",   t:"b-ing",  p:[[450,161],[530,161]], l:"워커 소비", lx:490, ly:120},
+    {f:"b-ing",  t:"b-done", p:[[680,161],[770,161]], l:"RenderCompleted", lx:725, ly:120},
+    {f:"b-ing",  t:"b-fail", p:[[590,192],[590,240]], l:"실패", lx:612, ly:216},
+    {f:"b-fail", t:"b-rq",   p:[[530,271],[365,271],[365,192]], l:"재시도 — renderVersion 멱등", lx:432, ly:288},
+    {f:"b-done", t:"b-del",  p:[[920,161],[1010,161]], l:"사용자 삭제", lx:965, ly:120},
+  ]},
+  smC:{h:370, nodes:[
+    {id:"c-req", x:30,  y:150, w:160, h:62, nm:"REQUESTED", sb:"업로드 요청 · Gate 1차", start:true},
+    {id:"c-pa",  x:280, y:30,  w:200, h:62, nm:"PENDING_APPROVAL", sb:"승인 대기함 (UC-29)"},
+    {id:"c-rej", x:560, y:30,  w:130, h:62, nm:"REJECTED", sb:"반려", term:true},
+    {id:"c-can", x:990, y:30,  w:140, h:62, nm:"CANCELED", sb:"요청 무효 · 취소", term:true},
+    {id:"c-q",   x:280, y:150, w:140, h:62, nm:"QUEUED", sb:"upload-jobs 대기"},
+    {id:"c-ing", x:500, y:150, w:150, h:62, nm:"UPLOADING", sb:"Gate 2차 → 실행"},
+    {id:"c-done",x:1090,y:150, w:160, h:62, nm:"UPLOADED", sb:"성공 · 비공개 + CC", term:true},
+    {id:"c-blk", x:60,  y:270, w:160, h:62, nm:"BLOCKED", sb:"권한 회수로 차단"},
+    {id:"c-fail",x:500, y:270, w:150, h:62, nm:"FAILED", sb:"명확한 실패"},
+    {id:"c-rc",  x:750, y:270, w:180, h:62, nm:"RECONCILING", sb:"채널 조회로 확정 중"},
+  ], edges:[
+    {f:"c-req",t:"c-q",   p:[[190,181],[280,181]], l:"권한 있음", lx:235, ly:140},
+    {f:"c-req",t:"c-pa",  p:[[110,150],[110,61],[280,61]], l:"권한 부족", lx:198, ly:53},
+    {f:"c-pa", t:"c-q",   p:[[350,92],[350,150]], l:"UploadApproved", lx:422, ly:122},
+    {f:"c-pa", t:"c-rej", p:[[480,61],[560,61]], l:"반려", lx:520, ly:53},
+    {f:"c-pa", t:"c-can", p:[[420,30],[420,12],[1060,12],[1060,30]], l:"대기 중 권한 회수 → 무효", lx:742, ly:6},
+    {f:"c-q",  t:"c-ing", p:[[420,181],[500,181]], l:"소비 · Gate 2차", lx:460, ly:140},
+    {f:"c-ing",t:"c-blk", p:[[520,212],[520,240],[140,240],[140,270]], l:"Gate 2차 실패 (권한 회수)", lx:330, ly:233},
+    {f:"c-ing",t:"c-done",p:[[650,181],[1090,181]], l:"성공 확인", lx:870, ly:171},
+    {f:"c-ing",t:"c-fail",p:[[565,212],[565,270]], l:"명확한 실패 (4xx)", lx:646, ly:250},
+    {f:"c-ing",t:"c-rc",  p:[[630,212],[630,242],[840,242],[840,270]], l:"응답 전 단절 — 불명확", lx:748, ly:235},
+    {f:"c-rc", t:"c-done",p:[[930,301],[1170,301],[1170,212]], l:"채널 조회: 있음", lx:1050, ly:293},
+    {f:"c-rc", t:"c-fail",p:[[750,301],[650,301]], l:"채널 조회: 없음", lx:700, ly:348},
+    {f:"c-fail",t:"c-q",  p:[[500,301],[320,301],[320,212]], l:"재인증 · 수동 재시도 (UC-27)", lx:392, ly:348},
+  ]},
+};
+
+const NS="http://www.w3.org/2000/svg";
+for(const [id,m] of Object.entries(MACHINES)){
+  const box=document.getElementById(id);
+  box.style.height=m.h+"px";
+  const svg=document.createElementNS(NS,"svg");
+  svg.setAttribute("width",1290); svg.setAttribute("height",m.h);
+  svg.innerHTML=`<defs><marker id="ah-${id}" markerWidth="9" markerHeight="9" refX="7.5" refY="4"
+    orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M1,1 L7.5,4 L1,7" fill="none" stroke="currentColor" stroke-width="1.2"/></marker></defs>`;
+  svg.style.color="var(--ink)";
+  box.appendChild(svg);
+  for(const n of m.nodes){
+    const d=document.createElement("div");
+    d.className="stn"+(n.term?" term":"")+(n.start?" start":""); d.id=n.id;
+    Object.assign(d.style,{left:n.x+"px",top:n.y+"px",width:n.w+"px",height:n.h+"px"});
+    d.innerHTML=`<div class="nm">${n.nm}</div><div class="sb">${n.sb}</div>`;
+    box.appendChild(d);
+  }
+  for(const e of m.edges){
+    const p=document.createElementNS(NS,"path");
+    p.setAttribute("d", e.p.map((q,i)=>(i?"L":"M")+q[0]+" "+q[1]).join(" "));
+    p.setAttribute("marker-end",`url(#ah-${id})`);
+    p.dataset.ends=e.f+","+e.t;
+    svg.appendChild(p);
+    const l=document.createElement("div");
+    l.className="lbl"; l.textContent=e.l;
+    Object.assign(l.style,{left:e.lx+"px",top:e.ly+"px"});
+    box.appendChild(l);
+  }
+}
+
+/* audit: 상자 겹침 · 라벨 겹침 · 선의 비끝점 상자 관통 — 콘솔에 보고 */
+window.__audit = () => {
+  const out={nodeOverlaps:[],lblOverlaps:[],through:[]};
+  for(const [id,m] of Object.entries(MACHINES)){
+    const box=document.getElementById(id);
+    const bb=box.getBoundingClientRect();
+    /* 라벨은 translate(-50%,-50%)라 offsetLeft가 실위치가 아니다 — 실좌표로 잰다 */
+    const R=el=>{const r=el.getBoundingClientRect();
+      return {l:r.left-bb.left,t:r.top-bb.top,r:r.right-bb.left,b:r.bottom-bb.top};};
+    const hit=(a,b,pad=0)=>Math.min(a.r,b.r+pad)-Math.max(a.l,b.l-pad)>0&&Math.min(a.b,b.b+pad)-Math.max(a.t,b.t-pad)>0;
+    const nodes=[...box.querySelectorAll(".stn")].map(el=>({id:el.id,...R(el)}));
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++)
+      if(hit(nodes[i],nodes[j])) out.nodeOverlaps.push(id+":"+nodes[i].id+"∩"+nodes[j].id);
+    const lbls=[...box.querySelectorAll(".lbl")].map(el=>({txt:el.textContent,...R(el)}));
+    for(const L of lbls){ for(const n of nodes) if(hit(L,n,-1)) out.lblOverlaps.push(id+':"'+L.txt+'"∩'+n.id);
+      for(const M of lbls) if(L!==M&&hit(L,M,-1)&&L.txt<M.txt) out.lblOverlaps.push(id+':"'+L.txt+'"∩"'+M.txt+'"'); }
+    for(const p of box.querySelectorAll("svg path[data-ends]")){
+      const ends=p.dataset.ends.split(","); const len=p.getTotalLength();
+      for(let s=6;s<len-6;s+=4){ const q=p.getPointAtLength(s);
+        for(const n of nodes){ if(ends.includes(n.id))continue;
+          if(q.x>n.l+2&&q.x<n.r-2&&q.y>n.t+2&&q.y<n.b-2){out.through.push(id+":"+p.dataset.ends+"→"+n.id);s=len;break;} } }
+    }
+  }
+  return out;
+};
+</script>
+</body>
+</html>
